@@ -1,8 +1,27 @@
-# Memory Card Game
+# Lightbox
 
-![image](review.png)
+![image](review.gif)
 
-Memory Card Game представляет собой набор из пар одинаковых карточек. Карточки выкладываются «рубашкой» вверх. Задача игрока следующая. Открывая карточки парами (по одной, последовательно), запоминать расположения одинаковых картинок. Когда, за один ход (два клика), открываются две карточки с одинаковыми картинками, пара фиксируется и остается открытой до конца игры. А если открытые подряд две карточки разные, то они переворачиваются обратно. Игра заканчивается, когда все карточки будут открыты. Ценится, и одновременно является показателем внимательности игрока, время, за которое он открыл все карты и число ходов.  
-Чем эти показатели меньше, тем лучше.
+[DEMO](https://alekstar79.github.io/lightbox)
 
-Использование максимально простое, достаточно просто скачать или клонировать данный репозиторий и запустить индексный файл (index.html)
+A component approach in pure JavaScript. Splitting of image gallery code and view code with individual scope.
+Features: slide, fit, zoom, pan, full screen, key control.
+
+## Install and usage
+
+Just clone or download this repository. Start local server
+(LiveServer plugin for VS Code / [serve](https://github.com/vercel/serve) npm package).
+That's all...
+
+Clone this repo:
+```shell
+git clone git@github.com:alekstar79/lightbox.git
+```
+Go to project directory:
+```shell
+cd lightbox
+```
+Start server:
+```shell
+serve -s .
+```
