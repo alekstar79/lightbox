@@ -10,7 +10,14 @@ describe('Bindings', () => {
 
   afterEach(() => {
     bindings.untrack()
-    ;(Bindings as any).self = null
+    // @ts-ignore
+    Bindings.self = null
+  })
+
+  it('should create singleton instance', () => {
+    const b1 = Bindings.init()
+    const b2 = Bindings.init()
+    expect(b1).toBe(b2)
   })
 
   it('should bind a handler to a key', () => {
@@ -65,9 +72,8 @@ describe('Bindings', () => {
       { keys: 'ArrowRight', handler: handler1 },
       { keys: 'ArrowLeft', handler: handler2 }
     ])
-    bindings.track()
 
-    // Отписываем только первый обработчик
+    bindings.track()
     bindings.unbind([keybinds[0]])
 
     const eventRight = new KeyboardEvent('keydown', { code: 'ArrowRight' })

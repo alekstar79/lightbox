@@ -47,4 +47,16 @@ describe('Emitter', () => {
     expect(listener).toHaveBeenCalledTimes(1)
     expect(listener).toHaveBeenCalledWith('early-payload')
   })
+
+  it('should do nothing when calling off for non-existent event', () => {
+    const emitter = new Emitter()
+    const listener = vi.fn()
+
+    expect(() => emitter.off('unknown', listener)).not.toThrow()
+
+    emitter.on('test', listener)
+    emitter.off('test', listener)
+    emitter.emit('test')
+    expect(listener).not.toHaveBeenCalled()
+  })
 })

@@ -1,5 +1,6 @@
 import { Bindings } from '../core/bindings'
-import { fullscreen } from '../core/fullscreen'
+import { IFullscreen } from '../core/fullscreen'
+import { emitter } from '../core/emitter'
 
 export class Lightbox {
   private static instance: Lightbox
@@ -8,7 +9,8 @@ export class Lightbox {
   private newIndex: number = 0
   private clickedIndex: number = 0
 
-  private readonly keyboard?: Bindings
+  private readonly keyboard: Bindings
+  private readonly fullscreen: IFullscreen
 
   private readonly previewBox: HTMLElement
   private previewImg: HTMLImageElement
@@ -31,16 +33,17 @@ export class Lightbox {
     return this.newIndex === 0
   }
 
-  public static init(keyboard?: Bindings): Lightbox {
-    return Lightbox.instance ||= new Lightbox(keyboard)
+  public static init(keyboard: Bindings, fullscreen: IFullscreen): Lightbox {
+    return Lightbox.instance ||= new Lightbox(keyboard, fullscreen)
   }
 
   private static get<T extends HTMLElement>(selector: string, parent: HTMLElement | Document = document): T {
     return parent.querySelector(selector) as T
   }
 
-  private constructor(keyboard?: Bindings) {
+  private constructor(keyboard: Bindings, fullscreen: IFullscreen) {
     this.keyboard = keyboard
+    this.fullscreen = fullscreen
 
     this.previewBox = Lightbox.get('.preview-box')
     this.previewImg = Lightbox.get('img', this.previewBox)
@@ -72,12 +75,12 @@ export class Lightbox {
     this.expandIcon.addEventListener('click', this.toggle)
     this.closeIcon.addEventListener('click', this.close)
     this.shadow.addEventListener('click', this.close)
-    fullscreen.on('change', this.onFullscreenChange)
+    this.fullscreen.on('change', this.onFullscreenChange)
   }
 
   private onFullscreenChange(): void {
-    this.previewBox.classList.toggle('fullscreen', fullscreen.isFullscreen)
-    this.imageBox.classList.toggle('fullscreen', fullscreen.isFullscreen)
+    this.previewBox.classList.toggle('fullscreen', this.fullscreen.isFullscreen)
+    this.imageBox.classList.toggle('fullscreen', this.fullscreen.isFullscreen)
   }
 
   private keybind(): void {
@@ -92,7 +95,7 @@ export class Lightbox {
   }
 
   private async toggle(): Promise<void> {
-    await fullscreen.toggle(this.previewBox)
+    await this.fullscreen.toggle(this.previewBox)
   }
 
   private view(): void {
@@ -125,19 +128,23 @@ export class Lightbox {
     this.previewBox.classList.remove('show')
     this.shadow.style.display = 'none'
 
-    if (fullscreen.isFullscreen) {
-      await fullscreen.exit()
+    if (this.fullscreen.isFullscreen) {
+      await this.fullscreen.exit()
     }
+
+    emitter.emit('close')
   }
 
   private nextBtnClick(): void {
-    if (this.nextBtnHide) return;
-    this.newIndex++;
-    this.view();
+    if (this.nextBtnHide) return
+
+    this.newIndex++
+    this.view()
   }
 
   private prevBtnClick(): void {
     if (this.prevBtnHide) return
+
     this.newIndex--
     this.view()
   }

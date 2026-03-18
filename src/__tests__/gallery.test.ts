@@ -11,9 +11,23 @@ describe('Gallery', () => {
     { src: 'img3.jpg' }
   ]
 
+  const waitForGallery = (timeout = 1000) => new Promise<void>((resolve, reject) => {
+    const check = () => {
+      if (document.querySelector('.gallery')) {
+        clearInterval(interval)
+        clearTimeout(timer)
+        resolve()
+      }
+    }
+    const interval = setInterval(check, 50)
+    const timer = setTimeout(() => {
+      clearInterval(interval)
+      reject(new Error('Gallery element not found in DOM'))
+    }, timeout)
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
-
     document.body.innerHTML = `
       <div class="wrapper">
         <input type="checkbox" />
@@ -32,39 +46,87 @@ describe('Gallery', () => {
     expect(gallery).toBeDefined()
   })
 
-  it('should create gallery items', () => {
+  it('should create gallery items with images (trigger=true)', async () => {
+    const checkbox = document.querySelector(checkboxSelector) as HTMLInputElement
+    checkbox.checked = true
+
     new Gallery(wrapper, checkboxSelector, refreshBtn, source)
+    await waitForGallery()
 
-    const wrapperElement = document.querySelector(wrapper)
-    expect(wrapperElement).not.toBeNull()
-
-    const content = wrapperElement?.innerHTML || ''
-    expect(content).toContain('img1.jpg')
-    expect(content).toContain('img2.jpg')
-    expect(content).toContain('img3.jpg')
+    const galleryItems = document.querySelectorAll('.gallery .image')
+    expect(galleryItems.length).toBe(3)
+    const firstImg = galleryItems[0].querySelector('img')
+    expect(firstImg).not.toBeNull()
+    expect(firstImg?.src).toContain('images/img')
   })
 
-  it('should handle checkbox change', () => {
-    const checkboxBefore = document.querySelector(checkboxSelector)
-    console.log('Checkbox перед созданием Gallery:', checkboxBefore)
+  it('should create gallery items with links (trigger=false)', async () => {
+    const checkbox = document.querySelector(checkboxSelector) as HTMLInputElement
+    checkbox.checked = false
 
     new Gallery(wrapper, checkboxSelector, refreshBtn, source)
+    await waitForGallery()
+
+    const galleryItems = document.querySelectorAll('.gallery .image')
+    expect(galleryItems.length).toBe(3)
+    const firstLink = galleryItems[0].querySelector('a')
+    expect(firstLink).not.toBeNull()
+    expect(firstLink?.textContent).toContain('img')
+  })
+
+  it('should add "loaded" class when image already complete', async () => {
+    const checkbox = document.querySelector(checkboxSelector) as HTMLInputElement
+    checkbox.checked = true
+
+    const originalComplete = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'complete')
+    Object.defineProperty(HTMLImageElement.prototype, 'complete', {
+      get: () => true,
+      configurable: true
+    })
+
+    const addEventListenerSpy = vi.spyOn(HTMLImageElement.prototype, 'addEventListener')
+
+    new Gallery(wrapper, checkboxSelector, refreshBtn, source)
+    await waitForGallery()
+
+    const loadedDivs = document.querySelectorAll('.image.loaded')
+    expect(loadedDivs.length).toBe(3)
+    expect(addEventListenerSpy).not.toHaveBeenCalledWith('load', expect.any(Function))
+
+    Object.defineProperty(HTMLImageElement.prototype, 'complete', originalComplete!)
+  })
+
+  it('should handle case when img is missing (trigger=false)', async () => {
+    const checkbox = document.querySelector(checkboxSelector) as HTMLInputElement
+    checkbox.checked = false
+
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    new Gallery(wrapper, checkboxSelector, refreshBtn, source)
+    await waitForGallery()
+
+    const imgs = document.querySelectorAll('.image img')
+    expect(imgs.length).toBe(0)
+    expect(consoleErrorSpy).not.toHaveBeenCalled()
+
+    consoleErrorSpy.mockRestore()
+  })
+
+  it('should handle checkbox change', async () => {
+    new Gallery(wrapper, checkboxSelector, refreshBtn, source)
+    await waitForGallery()
 
     const checkbox = document.querySelector(checkboxSelector)
-    console.log('Checkbox после создания Gallery:', checkbox)
 
     expect(checkbox).not.toBeNull()
     expect(checkbox).toBeInstanceOf(HTMLInputElement)
   })
 
-  it('should refresh gallery on button click', () => {
-    const refreshBtnBefore = document.querySelector(refreshBtn)
-    console.log('Refresh button перед созданием Gallery:', refreshBtnBefore)
-
+  it('should refresh gallery on button click', async () => {
     new Gallery(wrapper, checkboxSelector, refreshBtn, source)
+    await waitForGallery()
 
     const refreshBtnElement = document.querySelector(refreshBtn)
-    console.log('Refresh button после создания Gallery:', refreshBtnElement)
 
     expect(refreshBtnElement).not.toBeNull()
     expect(refreshBtnElement).toBeInstanceOf(HTMLButtonElement)

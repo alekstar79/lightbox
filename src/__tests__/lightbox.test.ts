@@ -1,38 +1,41 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { Lightbox } from '../components/lightbox'
-import { fullscreen } from '../core/fullscreen'
 import { Bindings } from '../core/bindings'
+import { IFullscreen } from '../core/fullscreen'
 
-let changeCallback: () => void = () => {}
-let mockIsFullscreen = false
+const createMockFullscreen = (): IFullscreen => {
+  let isFullscreen = false
+  const changeCallbacks: EventListener[] = []
 
-vi.mock('../core/fullscreen', () => ({
-  fullscreen: {
-    isEnabled: true,
-    get isFullscreen() {
-      return mockIsFullscreen
-    },
+  return {
+    get isEnabled() { return true },
+    get isFullscreen() { return isFullscreen },
     element: null,
-    toggle: vi.fn().mockImplementation(async () => {
-      mockIsFullscreen = !mockIsFullscreen
-      changeCallback()
+    toggle: vi.fn().mockImplementation(async (_element?: HTMLElement) => {
+      isFullscreen = !isFullscreen
+      changeCallbacks.forEach(cb => cb(new Event('fullscreenchange')))
+    }),
+    request: vi.fn().mockImplementation(async (_element?: HTMLElement) => {
+      isFullscreen = true
+      changeCallbacks.forEach(cb => cb(new Event('fullscreenchange')))
     }),
     exit: vi.fn().mockImplementation(async () => {
-      if (mockIsFullscreen) {
-        mockIsFullscreen = false
-        changeCallback()
+      if (isFullscreen) {
+        isFullscreen = false
+        changeCallbacks.forEach(cb => cb(new Event('fullscreenchange')))
       }
     }),
-    on: vi.fn((event, callback) => {
+    on: vi.fn((event: 'change' | 'error', callback: EventListener) => {
+      if (event === 'change') changeCallbacks.push(callback)
+    }),
+    off: vi.fn((event: 'change' | 'error', callback: EventListener) => {
       if (event === 'change') {
-        changeCallback = callback
+        const index = changeCallbacks.indexOf(callback)
+        if (index !== -1) changeCallbacks.splice(index, 1)
       }
-    }),
-    off: vi.fn()
+    })
   }
-}))
-
-vi.mock('../core/bindings')
+}
 
 const lightboxHTML = `
   <div class="preview-box">
@@ -56,18 +59,22 @@ const lightboxHTML = `
 describe('Lightbox', () => {
   let lightbox: Lightbox
   let mockBindings: Bindings
+  let mockFullscreen: IFullscreen
 
   beforeEach(() => {
     document.body.innerHTML = lightboxHTML
     mockBindings = new Bindings()
-    lightbox = Lightbox.init(mockBindings)
+    vi.spyOn(mockBindings, 'bind')
+    vi.spyOn(mockBindings, 'track')
+    mockFullscreen = createMockFullscreen()
+
+    lightbox = Lightbox.init(mockBindings, mockFullscreen)
   })
 
   afterEach(() => {
     document.body.innerHTML = ''
     ;(Lightbox as any).instance = undefined
     vi.clearAllMocks()
-    mockIsFullscreen = false
   })
 
   it('should open the lightbox with correct image and counter', () => {
@@ -131,21 +138,24 @@ describe('Lightbox', () => {
     const expandIcon = document.querySelector('.fa-expand') as HTMLElement
     expandIcon.click()
 
-    expect(fullscreen.toggle).toHaveBeenCalledTimes(1)
+    expect(mockFullscreen.toggle).toHaveBeenCalledTimes(1)
   })
 
-  it('should exit fullscreen when closing the lightbox if it was in fullscreen mode', () => {
+  it('should exit fullscreen when closing the lightbox if it was in fullscreen mode', async () => {
     lightbox.open(0, ['img1.jpg'])
 
     const expandIcon = document.querySelector('.fa-expand') as HTMLElement
     expandIcon.click()
-    expect(fullscreen.isFullscreen).toBe(true)
+
+    expect(mockFullscreen.isFullscreen).toBe(true)
 
     const closeIcon = document.querySelector('.fa-times') as HTMLElement
     closeIcon.click()
 
-    expect(fullscreen.exit).toHaveBeenCalledTimes(1)
-    expect(fullscreen.isFullscreen).toBe(false)
+    await Promise.resolve()
+
+    expect(mockFullscreen.exit).toHaveBeenCalledTimes(1)
+    expect(mockFullscreen.isFullscreen).toBe(false)
   })
 
   it('should call keyboard bindings on init', () => {
@@ -167,15 +177,5 @@ describe('Lightbox', () => {
     prevBtn.click()
     const currentImg = document.querySelector('.current-img') as HTMLElement
     expect(currentImg.textContent).toBe('1')
-  })
-
-  it('should not initialize keyboard bindings if not provided', () => {
-    vi.clearAllMocks()
-
-    ;(Lightbox as any).instance = undefined
-    Lightbox.init()
-
-    expect(mockBindings.bind).not.toHaveBeenCalled()
-    expect(mockBindings.track).not.toHaveBeenCalled()
   })
 })

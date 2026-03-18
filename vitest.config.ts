@@ -8,6 +8,7 @@ export default defineConfig({
       include: ['src/**/*.ts'],
       exclude: [
         'src/**/*.test.ts',
+        'src/styles.ts',
         'src/main.ts',
         'src/index.ts'
       ],
