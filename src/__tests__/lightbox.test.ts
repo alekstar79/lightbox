@@ -1,25 +1,38 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { Lightbox } from '../components/lightbox'
 import { fullscreen } from '../core/fullscreen'
+import { Bindings } from '../core/bindings'
 
-// Мокируем модуль fullscreen
+let changeCallback: () => void = () => {}
+let mockIsFullscreen = false
+
 vi.mock('../core/fullscreen', () => ({
   fullscreen: {
     isEnabled: true,
-    isFullscreen: false,
+    get isFullscreen() {
+      return mockIsFullscreen
+    },
     element: null,
     toggle: vi.fn().mockImplementation(async () => {
-      // Инвертируем состояние isFullscreen при каждом вызове toggle
-      const mock = vi.mocked(fullscreen)
-      mock.isFullscreen = !mock.isFullscreen
+      mockIsFullscreen = !mockIsFullscreen
+      changeCallback()
     }),
     exit: vi.fn().mockImplementation(async () => {
-      vi.mocked(fullscreen).isFullscreen = false
+      if (mockIsFullscreen) {
+        mockIsFullscreen = false
+        changeCallback()
+      }
     }),
-    on: vi.fn(),
+    on: vi.fn((event, callback) => {
+      if (event === 'change') {
+        changeCallback = callback
+      }
+    }),
     off: vi.fn()
   }
 }))
+
+vi.mock('../core/bindings')
 
 const lightboxHTML = `
   <div class="preview-box">
@@ -42,19 +55,19 @@ const lightboxHTML = `
 
 describe('Lightbox', () => {
   let lightbox: Lightbox
+  let mockBindings: Bindings
 
   beforeEach(() => {
-    // Устанавливаем HTML-структуру перед каждым тестом
     document.body.innerHTML = lightboxHTML
-    // Сбрасываем моки перед каждым тестом
-    vi.clearAllMocks()
-    // Инициализируем Lightbox
-    lightbox = Lightbox.init()
+    mockBindings = new Bindings()
+    lightbox = Lightbox.init(mockBindings)
   })
 
   afterEach(() => {
-    // Очищаем DOM после каждого теста
     document.body.innerHTML = ''
+    ;(Lightbox as any).instance = undefined
+    vi.clearAllMocks()
+    mockIsFullscreen = false
   })
 
   it('should open the lightbox with correct image and counter', () => {
@@ -72,7 +85,7 @@ describe('Lightbox', () => {
     expect(previewImg.src).toContain('img2.jpg')
   })
 
-  it('should navigate to the next image', () => {
+  it('should navigate to the next image on button click', () => {
     lightbox.open(0, ['img1.jpg', 'img2.jpg'])
 
     const nextBtn = document.querySelector('.next') as HTMLElement
@@ -82,7 +95,17 @@ describe('Lightbox', () => {
     expect(currentImg.textContent).toBe('2')
   })
 
-  it('should close the lightbox', () => {
+  it('should navigate to the previous image on button click', () => {
+    lightbox.open(1, ['img1.jpg', 'img2.jpg'])
+
+    const prevBtn = document.querySelector('.prev') as HTMLElement
+    prevBtn.click()
+
+    const currentImg = document.querySelector('.current-img') as HTMLElement
+    expect(currentImg.textContent).toBe('1')
+  })
+
+  it('should close the lightbox on icon click', () => {
     lightbox.open(0, ['img1.jpg'])
 
     const closeIcon = document.querySelector('.fa-times') as HTMLElement
@@ -92,27 +115,67 @@ describe('Lightbox', () => {
     expect(previewBox.classList.contains('show')).toBe(false)
   })
 
-  it('should call fullscreen.toggle when expand icon is clicked', async () => {
+  it('should close the lightbox on shadow click', () => {
+    lightbox.open(0, ['img1.jpg'])
+
+    const shadow = document.querySelector('.shadow') as HTMLElement
+    shadow.click()
+
+    const previewBox = document.querySelector('.preview-box') as HTMLElement
+    expect(previewBox.classList.contains('show')).toBe(false)
+  })
+
+  it('should call fullscreen.toggle when expand icon is clicked', () => {
     lightbox.open(0, ['img1.jpg'])
 
     const expandIcon = document.querySelector('.fa-expand') as HTMLElement
-    await expandIcon.click()
+    expandIcon.click()
 
     expect(fullscreen.toggle).toHaveBeenCalledTimes(1)
   })
 
-  it('should exit fullscreen when closing the lightbox if it was in fullscreen mode', async () => {
+  it('should exit fullscreen when closing the lightbox if it was in fullscreen mode', () => {
     lightbox.open(0, ['img1.jpg'])
 
-    // Входим в полноэкранный режим
     const expandIcon = document.querySelector('.fa-expand') as HTMLElement
-    await expandIcon.click()
-    expect(vi.mocked(fullscreen).isFullscreen).toBe(true)
+    expandIcon.click()
+    expect(fullscreen.isFullscreen).toBe(true)
 
-    // Закрываем лайтбокс
     const closeIcon = document.querySelector('.fa-times') as HTMLElement
-    await closeIcon.click()
+    closeIcon.click()
 
     expect(fullscreen.exit).toHaveBeenCalledTimes(1)
+    expect(fullscreen.isFullscreen).toBe(false)
+  })
+
+  it('should call keyboard bindings on init', () => {
+    expect(mockBindings.bind).toHaveBeenCalledTimes(1)
+    expect(mockBindings.track).toHaveBeenCalledTimes(1)
+  })
+
+  it('should not navigate beyond the last image', () => {
+    lightbox.open(1, ['img1.jpg', 'img2.jpg'])
+    const nextBtn = document.querySelector('.next') as HTMLElement
+    nextBtn.click()
+    const currentImg = document.querySelector('.current-img') as HTMLElement
+    expect(currentImg.textContent).toBe('2')
+  })
+
+  it('should not navigate before the first image', () => {
+    lightbox.open(0, ['img1.jpg', 'img2.jpg'])
+    const prevBtn = document.querySelector('.prev') as HTMLElement
+    prevBtn.click()
+    const currentImg = document.querySelector('.current-img') as HTMLElement
+    expect(currentImg.textContent).toBe('1')
+  })
+
+  it('should not initialize keyboard bindings if not provided', () => {
+    vi.clearAllMocks()
+
+    ;(Lightbox as any).instance = undefined
+    Lightbox.init()
+
+    expect(mockBindings.bind).not.toHaveBeenCalled()
+    expect(mockBindings.track).not.toHaveBeenCalled()
   })
 })

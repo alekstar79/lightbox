@@ -65,8 +65,12 @@ export class Bindings {
     return source.map(b => this.on(b.keys, b.handler))
   }
 
-  public unbind(map: Keybind[]): void {
-    map.forEach(kb => this.keybinds.delete(kb))
+  public unbind(map?: Keybind[]): void {
+    if (map) {
+      map.forEach(kb => this.keybinds.delete(kb))
+    } else {
+      this.keybinds.clear()
+    }
   }
 
   public track(): void {

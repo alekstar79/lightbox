@@ -76,9 +76,7 @@ export class Lightbox {
   }
 
   private onFullscreenChange(): void {
-    // Изменено: добавляем класс 'fullscreen' к previewBox
     this.previewBox.classList.toggle('fullscreen', fullscreen.isFullscreen)
-    // Также добавляем класс к imageBox, если это необходимо для других стилей
     this.imageBox.classList.toggle('fullscreen', fullscreen.isFullscreen)
   }
 
