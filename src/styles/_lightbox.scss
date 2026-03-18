@@ -1,0 +1,131 @@
+.preview-box {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  min-height: fit-content;
+  min-width: fit-content;
+  opacity: 0;
+  background: #fff;
+  pointer-events: none;
+  border-radius: 3px;
+  padding: 0 5px 5px 5px;
+  box-shadow: 0 0 15px rgba(0,0,0,.2);
+  user-select: none;
+}
+
+.preview-box.fullscreen {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform: none;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+.preview-box:hover .slide {
+  opacity: 1;
+}
+
+.preview-box.show {
+  pointer-events: auto;
+  transition: opacity .3s ease;
+  opacity: 1;
+}
+
+.preview-box .details {
+  display: flex;
+  align-items: center;
+  padding: 12px 15px 12px 10px;
+  justify-content: space-between;
+}
+
+.preview-box .details .title {
+  display: flex;
+  font-size: 18px;
+  font-weight: 400;
+}
+
+.details .title p {
+  margin: 0 5px;
+}
+
+.details .title p.current-img {
+  font-weight: 500;
+}
+
+.details .icon {
+  padding: 3px 10px;
+  color: #007bff;
+  font-size: 20px;
+  cursor: pointer;
+  transition: transform .3s ease;
+}
+
+.details .icon:hover {
+  transform: scale(1.2);
+}
+
+.preview-box .image-box {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  max-width: calc(100vw - 50px);
+  max-height: calc(100vh - 100px);
+}
+
+.preview-box.fullscreen .image-box {
+  max-width: none;
+  max-height: none;
+  min-height: 0;
+}
+
+.image-box .pan-overlay {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.image-box .slide {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 10px;
+  height: 60px;
+  width: 60px;
+  border-radius: 50%;
+  background-color: rgba(0,0,0,.5);
+  transition: all .3s ease;
+  font-size: 30px;
+  cursor: pointer;
+  color: #fff;
+  opacity: 0;
+}
+
+.image-box .slide.hide {
+  display: none;
+}
+
+.image-box .slide:hover {
+  transform: scale(1.2);
+}
+
+.slide.prev {
+  left: 0;
+}
+
+.slide.next {
+  right: 0;
+}
+
+.image-box img {
+  flex-shrink: 0;
+  max-width: 100%;
+  max-height: 100%;
+}

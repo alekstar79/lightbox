@@ -1,0 +1,94 @@
+.toggler {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  min-width: fit-content;
+
+  padding: 10px 10px 35px;
+  font-size: 14px;
+}
+
+.toggler .btn {
+  margin: 0 0 0 30px;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.toggler label {
+  text-align: left;
+}
+
+#theme {
+  display: none;
+}
+
+[for="theme"] {
+  position: relative;
+  display: block;
+  padding: 15px;
+  width: 110px;
+
+  border-radius: 16px;
+  line-height: 3px;
+  cursor: pointer;
+  color: #31b3ff;
+
+  text-shadow: 1px 1px 0 rgba(255,255,255,.15);
+  background: rgb(71, 71, 71);
+  box-shadow:
+    0 1px 3px rgba(100,100,100,.2),
+    inset 0 0 0 5px rgb(60,60,60),
+    inset 0 6px 6px rgba(0,0,0,.5),
+    inset 0 -6px 1px rgba(255,255,255,.2);
+
+  user-select: none;
+}
+
+[for="theme"]:before {
+  position: absolute;
+  right: 15px;
+
+  color: #31b3ff;
+}
+
+[for="theme"]:after {
+  position: absolute;
+  left: 6px;
+  top: 5px;
+
+  display: flex;
+  justify-content: center;
+  height: 22px;
+  width: 50px;
+
+  border-radius: 10px;
+  background: #ccc linear-gradient(#fcfff4 0%, #dfe5d7 40%, #b3bead 100%);
+  color: rgb(71, 71, 71);
+
+  line-height: 23px;
+  font-weight: 700;
+  font-size: 14px;
+
+  transition: .5s;
+}
+
+[for="theme"].reverse-toggler:after {
+  left: 54px;
+}
+
+#theme:checked ~ [for="theme"]:after {
+  left: 54px
+}
+
+#theme:checked ~ [for="theme"].reverse-toggler:after {
+  left: 6px;
+}
+
+[for="theme"]:before {
+  content: 'LNK';
+}
+
+[for="theme"]:after {
+  content: 'LIST';
+}
