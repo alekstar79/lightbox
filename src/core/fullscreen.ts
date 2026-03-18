@@ -19,7 +19,7 @@ const fullscreenMap = [
     'webkitRequestFullScreen',
     'webkitCancelFullScreen',
     'webkitCurrentFullScreenElement',
-    'webkitCancelFullScreen',
+    'webkitFullScreenEnabled',
     'webkitfullscreenchange',
     'webkitfullscreenerror'
   ],
@@ -52,11 +52,14 @@ interface FullscreenApi {
 
 const fn: Partial<FullscreenApi> = {}
 const isEnabled = fullscreenMap.some(map => {
-  if (map[1] in document) {
+  // Проверяем наличие методов/свойств в document
+  const hasExitFullscreen = typeof (document as any)[map[1]] !== 'undefined'
+  const hasFullscreenEnabled = typeof (document as any)[map[3]] !== 'undefined'
+
+  if (hasExitFullscreen || hasFullscreenEnabled) {
     for (let i = 0; i < map.length; i++) {
       (fn as any)[fullscreenMap[0][i]] = map[i]
     }
-
     return true
   }
 
@@ -141,12 +144,12 @@ const handler = {
 export const fullscreen = isEnabled
   ? handler
   : {
-      isEnabled: false,
-      isFullscreen: false,
-      element: null,
-      toggle: () => Promise.resolve(),
-      on: () => {},
-      off: () => {},
-      request: () => Promise.resolve(),
-      exit: () => Promise.resolve()
-    }
+    isEnabled: false,
+    isFullscreen: false,
+    element: null,
+    toggle: () => Promise.resolve(),
+    on: () => {},
+    off: () => {},
+    request: () => Promise.resolve(),
+    exit: () => Promise.resolve()
+  }

@@ -5,6 +5,8 @@ export interface ImageSource {
 }
 
 export class Gallery {
+  private readonly galleryContainer: HTMLElement
+
   private container: HTMLElement
   private checkbox: HTMLInputElement
   private refreshBtn: HTMLElement
@@ -15,6 +17,10 @@ export class Gallery {
     this.checkbox = document.querySelector(checkboxSelector) as HTMLInputElement
     this.refreshBtn = document.querySelector(refreshBtnSelector) as HTMLElement
     this.source = source
+
+    this.galleryContainer = document.createElement('div')
+    this.galleryContainer.className = 'gallery-container'
+    this.container.appendChild(this.galleryContainer)
 
     this.checkbox.addEventListener('change', () => this.render())
     this.refreshBtn.addEventListener('click', () => this.render())
@@ -49,8 +55,8 @@ export class Gallery {
         div.appendChild(item)
       })
 
-    this.container.innerHTML = ''
-    this.container.appendChild(div)
+    this.galleryContainer.innerHTML = ''
+    this.galleryContainer.appendChild(div)
 
     emitter.emit('list:created')
 
