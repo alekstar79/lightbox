@@ -10,7 +10,6 @@ describe('Bindings', () => {
 
   afterEach(() => {
     bindings.untrack()
-    // Сбрасываем синглтон Bindings для каждого теста
     ;(Bindings as any).self = null
   })
 
