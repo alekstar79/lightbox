@@ -1,7 +1,6 @@
 # Lightbox TS
 
 [![npm version](https://img.shields.io/npm/v/@alekstar79/lightbox.svg)](https://www.npmjs.com/package/@alekstar79/lightbox)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![License](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
 [![GitHub](https://img.shields.io/badge/github-repo-green.svg?style=flat)](https://github.com/alekstar79/lightbox)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue?style=flat-square)](https://www.typescriptlang.org)
@@ -14,7 +13,7 @@ A modern, lightweight, and dependency‑free lightbox library for images. Built 
 [LIVE DEMO](https://alekstar79.github.io/lightbox)
 
 <!-- TOC -->
-* [Lightbox](#lightbox)
+* [Lightbox TS](#lightbox-ts)
   * [Features](#features)
   * [Installation](#installation)
   * [Quick Start](#quick-start)
@@ -23,7 +22,7 @@ A modern, lightweight, and dependency‑free lightbox library for images. Built 
     * [`LightboxApp`](#lightboxapp)
   * [Low‑level API](#lowlevel-api)
     * [`Gallery`](#gallery)
-    * [`Lightbox`](#lightbox-1)
+    * [`Lightbox`](#lightbox)
     * [`Renderer`](#renderer)
     * [`Bindings`](#bindings)
     * [`Fullscreen`](#fullscreen)
