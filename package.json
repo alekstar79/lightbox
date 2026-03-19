@@ -4,7 +4,7 @@
   "version": "2.0.0",
   "type": "module",
   "description": "A modern, lightweight, and dependency-free lightbox library for images, with zoom, pan, and fullscreen features.",
-  "author": "alekstar79",
+  "author": "Aleksey Tarasenko <alekstar79@yandex.ru>",
   "license": "MIT",
   "keywords": [
     "lightbox",
@@ -25,7 +25,8 @@
     "url": "https://github.com/alekstar79/lightbox/issues"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
   },
   "module": "./lib/index.js",
   "types": "./lib/index.d.ts",
@@ -37,7 +38,10 @@
     "./lib/styles.css": "./lib/styles.css"
   },
   "files": [
-    "lib"
+    "lib",
+    "package.json",
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "dev": "vite",
