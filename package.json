@@ -1,7 +1,7 @@
 {
   "name": "@alekstar79/lightbox",
   "private": false,
-  "version": "2.0.1",
+  "version": "2.0.2",
   "type": "module",
   "description": "A modern, lightweight, and dependency-free lightbox library for images, with zoom, pan, and fullscreen features.",
   "author": "Aleksey Tarasenko <alekstar79@yandex.ru>",
