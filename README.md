@@ -1,4 +1,4 @@
-# Lightbox
+# Lightbox TS
 
 [![npm version](https://img.shields.io/npm/v/@alekstar79/lightbox.svg)](https://www.npmjs.com/package/@alekstar79/lightbox)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
