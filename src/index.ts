@@ -8,5 +8,5 @@ export { Fullscreen } from './core/fullscreen'
 export { emitter } from './core/emitter'
 export { createLightbox, LightboxApp } from './factory'
 
-export type { ImageSource } from './components/gallery'
+export type { GalleryOptions, ImageSource } from './components/gallery'
 export type { LightboxOptions } from './factory'

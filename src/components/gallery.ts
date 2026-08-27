@@ -4,32 +4,36 @@ export interface ImageSource {
   src: string;
 }
 
+export interface GalleryOptions {
+  containerSelector: string;
+  setupFn?: (gallery: Gallery) => boolean
+  source: ImageSource[];
+}
+
 export class Gallery {
   private readonly galleryContainer: HTMLElement
 
   private container: HTMLElement
-  private checkbox: HTMLInputElement
-  private refreshBtn: HTMLElement
   private source: ImageSource[]
 
-  constructor(containerSelector: string, checkboxSelector: string, refreshBtnSelector: string, source: ImageSource[]) {
+  constructor({ containerSelector, source, setupFn }: GalleryOptions) {
     this.container = document.querySelector(containerSelector) as HTMLElement
-    this.checkbox = document.querySelector(checkboxSelector) as HTMLInputElement
-    this.refreshBtn = document.querySelector(refreshBtnSelector) as HTMLElement
     this.source = source
 
     this.galleryContainer = document.createElement('div')
     this.galleryContainer.className = 'gallery-container'
     this.container.appendChild(this.galleryContainer)
 
-    this.checkbox.addEventListener('change', () => this.render())
-    this.refreshBtn.addEventListener('click', () => this.render())
+    let toggler = true
+    if (typeof setupFn === 'function') {
+      toggler = setupFn(this)
+    }
 
-    this.render().catch(console.error)
+    this.render(toggler).catch(console.error)
     emitter.emit('window:loaded')
   }
 
-  private async createList(trigger: boolean): Promise<HTMLElement[]> {
+  private async createList(isImagesList: boolean): Promise<HTMLElement[]> {
     const div = document.createElement('div')
     const flow: HTMLElement[] = []
 
@@ -42,7 +46,7 @@ export class Gallery {
       .forEach(({ src }) => {
         const item = document.createElement('div')
 
-        if (trigger) {
+        if (isImagesList) {
           item.classList.add('image', 'content', 'flow')
           item.style.backgroundImage = `url(images/thumb/${src})`
           item.innerHTML = `<img src="images/${src}" loading="lazy" alt="" />`
@@ -79,8 +83,7 @@ export class Gallery {
     })
   }
 
-  public async render(): Promise<void> {
-    const flow = await this.createList(this.checkbox.checked)
-    this.loadImages(flow)
+  public async render(toggler: boolean = true): Promise<void> {
+    this.loadImages(await this.createList(toggler))
   }
 }

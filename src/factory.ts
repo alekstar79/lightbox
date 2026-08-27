@@ -39,10 +39,10 @@ export class LightboxApp {
   constructor(options: LightboxOptions) {
     const {
       gallerySelector = '.wrapper',
-      source,
       scaleSensitivity = 50,
       minScale = 0.1,
       maxScale = 30,
+      source
     } = options
 
     this.fullscreen = new Fullscreen()
@@ -61,12 +61,24 @@ export class LightboxApp {
       maxScale,
     })
 
-    new Gallery(
-      gallerySelector,
-      'input[type="checkbox"]',
-      '.refresh-btn',
-      source
-    )
+    new Gallery({
+      source,
+      containerSelector: gallerySelector,
+      setupFn: (gallery) => {
+        const checkbox = document.querySelector('input[type="checkbox"]') as HTMLInputElement
+        const refreshBtn = document.querySelector('.refresh-btn') as HTMLElement
+
+        checkbox?.addEventListener('change', async () => {
+          await gallery.render(checkbox?.checked ?? true)
+        })
+
+        refreshBtn?.addEventListener('click', async () => {
+          await gallery.render(checkbox?.checked ?? true)
+        })
+
+        return checkbox?.checked ?? true
+      }
+    })
 
     this.overlay = document.querySelector('.pan-overlay')
     this.setupEvents()
