@@ -9,6 +9,7 @@ import { emitter } from './core/emitter'
 
 export interface LightboxOptions {
   source: ImageSource[];
+  thumb?: ImageSource[];
   gallerySelector?: string;
   scaleSensitivity?: number;
   minScale?: number;
@@ -30,9 +31,10 @@ export function create(options: LightboxOptions): LightboxApp {
     scaleSensitivity = 50,
     minScale = 0.1,
     maxScale = 30,
-    source,
-    setupFn,
     plugins = [],
+    setupFn,
+    source,
+    thumb
   } = options
 
   Fullscreen.init()
@@ -60,7 +62,7 @@ export function create(options: LightboxOptions): LightboxApp {
   const container = document.querySelector(gallerySelector) as HTMLElement
   const gallery = new Gallery({
     container,
-    source,
+    source: thumb ?? source,
     setupFn: (galleryInstance) => {
       setupFn?.(galleryInstance)
     }
@@ -88,18 +90,17 @@ export function create(options: LightboxOptions): LightboxApp {
     galleryEl.addEventListener('click', (e) => {
       const target = e.target as HTMLElement
 
-      if (!['A', 'IMG'].includes(target.tagName)) return
+      if (target.tagName !== 'IMG') return
 
-      const link = (target as HTMLImageElement).src || target.textContent || ''
+      const link = (target as HTMLImageElement).src || ''
       const list: string[] = []
 
       let clickedIndex: number | undefined
 
-      [...galleryEl.children].forEach((el, idx) => {
-        const child = el.firstElementChild as HTMLImageElement | HTMLAnchorElement
-        const src = child ? (child as HTMLImageElement).src || child.textContent : ''
+      [...source].forEach(({ src = '' }: ImageSource, idx) => {
+        const path = src.split('/').at(-1) as string
 
-        if (src && link.includes(src)) {
+        if (src && link.includes(path)) {
           clickedIndex = idx
         }
 

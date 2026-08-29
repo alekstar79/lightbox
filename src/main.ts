@@ -8,6 +8,10 @@ import './styles/main.scss'
     src: `images/img-${`${i + 1}`.padStart(2, '0')}.jpg`,
   }))
 
+  const thumb = Array.from({ length: 28 }, (_, i) => ({
+    src: `thumb/img-${`${i + 1}`.padStart(2, '0')}.jpg`,
+  }))
+
   await ready()
 
   const checkbox = document.querySelector('input[type="checkbox"]') as HTMLInputElement
@@ -16,9 +20,10 @@ import './styles/main.scss'
   const getPlugins = () => checkbox.checked ? [new DirectionalHoverPlugin()] : []
 
   const app = create({
-    source,
     gallerySelector: '.wrapper',
-    plugins: getPlugins()
+    plugins: getPlugins(),
+    source,
+    thumb
   })
 
   checkbox.addEventListener('change', () => {
