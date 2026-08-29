@@ -2,7 +2,7 @@
   "name": "@alekstar79/lightbox",
   "description": "A modern, lightweight, and dependency-free lightbox library for images, with zoom, pan, and fullscreen features.",
   "author": "Aleksey Tarasenko <alekstar79@yandex.ru>",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "license": "MIT",
   "type": "module",
   "private": false,
@@ -38,7 +38,7 @@
       "import": "./lib/index.js",
       "types": "./lib/index.d.ts"
     },
-    "./lib/styles.css": "./lib/styles.css",
+    "./lib/index.css": "./lib/index.css",
     "./lib/directional-hover.css": "./lib/directional-hover.css"
   },
   "files": [
