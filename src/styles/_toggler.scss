@@ -68,7 +68,7 @@
 
   line-height: 23px;
   font-weight: 700;
-  font-size: 14px;
+  font-size: 12px;
 
   transition: .5s;
 }
@@ -86,9 +86,9 @@
 }
 
 [for="theme"]:before {
-  content: 'LNK';
+  content: 'OFF';
 }
 
 [for="theme"]:after {
-  content: 'LIST';
+  content: 'PLUGIN';
 }

@@ -1,181 +1,192 @@
+import { Plugin, PluginContext } from './core/plugin'
+
 import { Gallery, ImageSource } from './components/gallery'
-import { Lightbox } from './components/lightbox'
+import { Lightbox, LightboxDependencies } from './components/lightbox'
 import { Bindings } from './core/bindings'
 import { Renderer } from './core/renderer'
 import { Fullscreen } from './core/fullscreen'
 import { emitter } from './core/emitter'
 
 export interface LightboxOptions {
-  /**
-   * Селектор для контейнера галереи (по умолчанию '.wrapper')
-   */
-  gallerySelector?: string
-  /**
-   * Массив источников изображений
-   */
-  source: ImageSource[]
-  /**
-   * Чувствительность масштабирования (по умолчанию 50)
-   */
-  scaleSensitivity?: number
-  /**
-   * Минимальный масштаб (по умолчанию 0.1)
-   */
-  minScale?: number
-  /**
-   * Максимальный масштаб (по умолчанию 30)
-   */
-  maxScale?: number
+  source: ImageSource[];
+  gallerySelector?: string;
+  scaleSensitivity?: number;
+  minScale?: number;
+  maxScale?: number;
+  setupFn?: (gallery: Gallery) => void;
+  plugins?: Plugin[];
 }
 
-export class LightboxApp {
-  private lightbox: Lightbox
+export interface LightboxApp {
+  destroy: () => void;
+  gallery: Gallery;
+  setPlugins: (plugins: Plugin[]) => void;
+  reapplyPlugins: () => void;
+}
 
-  private readonly renderer: Renderer
-  private readonly bindings: Bindings
-  private readonly fullscreen: Fullscreen
-  private readonly overlay: HTMLElement | null
+export function create(options: LightboxOptions): LightboxApp {
+  const {
+    gallerySelector = '.wrapper',
+    scaleSensitivity = 50,
+    minScale = 0.1,
+    maxScale = 30,
+    source,
+    setupFn,
+    plugins = [],
+  } = options
 
-  constructor(options: LightboxOptions) {
-    const {
-      gallerySelector = '.wrapper',
-      scaleSensitivity = 50,
-      minScale = 0.1,
-      maxScale = 30,
-      source
-    } = options
+  Fullscreen.init()
 
-    this.fullscreen = new Fullscreen()
-    this.bindings = Bindings.init()
-    this.lightbox = Lightbox.init(this.bindings, this.fullscreen)
+  const root = document.querySelector('.preview-box') as HTMLElement
+  if (!root) throw new Error('Lightbox root element not found')
 
-    const previewImg = document.querySelector('.preview-box img') as HTMLElement
-    if (!previewImg) {
-      throw new Error('Preview image not found')
-    }
-
-    this.renderer = new Renderer({
-      element: previewImg,
-      scaleSensitivity,
-      minScale,
-      maxScale,
-    })
-
-    new Gallery({
-      source,
-      containerSelector: gallerySelector,
-      setupFn: (gallery) => {
-        const checkbox = document.querySelector('input[type="checkbox"]') as HTMLInputElement
-        const refreshBtn = document.querySelector('.refresh-btn') as HTMLElement
-
-        checkbox?.addEventListener('change', async () => {
-          await gallery.render(checkbox?.checked ?? true)
-        })
-
-        refreshBtn?.addEventListener('click', async () => {
-          await gallery.render(checkbox?.checked ?? true)
-        })
-
-        return checkbox?.checked ?? true
-      }
-    })
-
-    this.overlay = document.querySelector('.pan-overlay')
-    this.setupEvents()
-    this.setupGalleryClick()
+  const deps: LightboxDependencies = {
+    root,
+    shadow: document.querySelector('.shadow') as HTMLElement,
+    imageBox: root.querySelector('.image-box') as HTMLElement,
+    image: root.querySelector('img') as HTMLImageElement,
+    currentCounter: root.querySelector('.current-img') as HTMLElement,
+    totalCounter: root.querySelector('.total-img') as HTMLElement,
+    expandBtn: root.querySelector('.fa-expand') as HTMLElement,
+    closeBtn: root.querySelector('.fa-times') as HTMLElement,
+    prevBtn: root.querySelector('.prev') as HTMLElement,
+    nextBtn: root.querySelector('.next') as HTMLElement
   }
 
-  private setupGalleryClick(): void {
-    emitter.on('list:created', () => {
-      const galleryEl = document.querySelector('.gallery')
-      if (!galleryEl) return
+  const bindings = new Bindings()
+  const renderer = new Renderer({ element: deps.image, minScale, maxScale, scaleSensitivity })
+  const lightbox = new Lightbox({ deps, keyboard: bindings })
 
-      galleryEl.addEventListener('click', (e: Event) => {
-        const target = e.target as HTMLElement
+  const container = document.querySelector(gallerySelector) as HTMLElement
+  const gallery = new Gallery({
+    container,
+    source,
+    setupFn: (galleryInstance) => {
+      setupFn?.(galleryInstance)
+    }
+  })
 
-        if (!['A', 'IMG'].includes(target.tagName)) return
+  lightbox.onViewChange = () => renderer.panTo({ originX: 0, originY: 0, scale: 1 })
 
-        const link = (target as HTMLImageElement).src || target.textContent || ''
-        const data: { list: string[]; currentIdx?: number } = { list: [] }
+  const context: PluginContext = {
+    root: document.body,
+    gallery,
+    lightbox,
+    renderer,
+    emitter
+  }
 
-        data.list = [...galleryEl.children].map((el, idx) => {
-          const child = el.firstElementChild as HTMLImageElement | HTMLAnchorElement
-          const src = child ? (child as HTMLImageElement).src || child.textContent : ''
+  let activePlugins: Plugin[] = [...plugins]
 
-          if (src && link.includes(src)) {
-            data.currentIdx = idx
-          }
+  activePlugins.forEach(plugin => plugin.apply(context))
 
-          return src || ''
-        })
+  const unsubscribeList = emitter.on('list:created', () => {
+    const galleryEl = gallery.galleryElement.querySelector('.gallery')
 
-        if (data.currentIdx !== undefined) {
-          emitter.emit('open', { currentIdx: data.currentIdx, list: data.list })
+    if (!galleryEl) return
+
+    galleryEl.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement
+
+      if (!['A', 'IMG'].includes(target.tagName)) return
+
+      const link = (target as HTMLImageElement).src || target.textContent || ''
+      const list: string[] = []
+
+      let clickedIndex: number | undefined
+
+      [...galleryEl.children].forEach((el, idx) => {
+        const child = el.firstElementChild as HTMLImageElement | HTMLAnchorElement
+        const src = child ? (child as HTMLImageElement).src || child.textContent : ''
+
+        if (src && link.includes(src)) {
+          clickedIndex = idx
         }
+
+        list.push(src)
       })
+
+      if (clickedIndex !== undefined) {
+        lightbox.open(clickedIndex, list)
+      }
     })
-  }
+  })
 
-  private setupEvents(): void {
-    emitter.on('open', ({ currentIdx, list }: { currentIdx: number; list: string[] }) => {
-      this.lightbox.open(currentIdx, list)
-    })
+  const overlay = deps.imageBox.querySelector('.pan-overlay') as HTMLElement
+  let overlayCleanup: (() => void) | null = null
 
-    if (this.overlay && this.renderer) {
-      let down = false
+  if (overlay) {
+    let down = false
 
-      const panTo = (): void => {
-        this.renderer.panTo({ originX: 0, originY: 0, scale: 1 })
-      }
+    const panTo = () => renderer.panTo({ originX: 0, originY: 0, scale: 1 })
+    const panBy = (e: MouseEvent) => {
+      e.preventDefault()
+      renderer.panBy({ originX: e.movementX, originY: e.movementY })
+    }
 
-      const panBy = (e: MouseEvent): void => {
-        e.preventDefault()
-        this.renderer.panBy({
-          originX: e.movementX,
-          originY: e.movementY,
-        })
-      }
+    const wheel = (e: WheelEvent) => {
+      e.preventDefault()
+      renderer.zoom({ deltaScale: Math.sign(e.deltaY), x: e.clientX, y: e.clientY })
+    }
 
-      const wheel = (e: WheelEvent): void => {
-        e.preventDefault()
-        this.renderer.zoom({
-          deltaScale: Math.sign(e.deltaY),
-          x: e.clientX,
-          y: e.clientY,
-        })
-      }
+    const panStart = (e: MouseEvent) => {
+      if (down || e.button !== 0) return
+      overlay.addEventListener('mousemove', panBy as EventListener, false)
+      down = true
+    }
 
-      const panStart = (e: MouseEvent): void => {
-        if (down || e.button !== 0) return
-        this.overlay?.addEventListener('mousemove', panBy, false)
-        down = true
-      }
+    const panStop = () => {
+      overlay.removeEventListener('mousemove', panBy as EventListener, false)
+      down = false
+    }
 
-      const panStop = (): void => {
-        this.overlay?.removeEventListener('mousemove', panBy, false)
-        down = false
-      }
+    overlay.addEventListener('mousedown', panStart as EventListener)
+    overlay.addEventListener('mouseup', panStop as EventListener)
+    overlay.addEventListener('dblclick', panTo as EventListener)
+    overlay.addEventListener('wheel', wheel as EventListener)
 
-      this.overlay.addEventListener('mousedown', panStart)
-      this.overlay.addEventListener('mouseup', panStop)
-      this.overlay.addEventListener('dblclick', panTo)
-      this.overlay.addEventListener('wheel', wheel)
-
-      Lightbox.preview = panTo
+    overlayCleanup = () => {
+      overlay.removeEventListener('mousedown', panStart as EventListener)
+      overlay.removeEventListener('mouseup', panStop as EventListener)
+      overlay.removeEventListener('dblclick', panTo as EventListener)
+      overlay.removeEventListener('wheel', wheel as EventListener)
+      overlay.removeEventListener('mousemove', panBy as EventListener, false)
     }
   }
 
-  public destroy(): void {
-    this.bindings.untrack()
-    this.bindings.dispose()
-
-    if (this.overlay) {
-      const newOverlay = this.overlay.cloneNode(false)
-      this.overlay.parentNode?.replaceChild(newOverlay, this.overlay)
-    }
+  const setPlugins = (newPlugins: Plugin[]) => {
+    activePlugins.forEach(plugin => plugin.destroy?.())
+    activePlugins = [...newPlugins]
+    activePlugins.forEach(plugin => plugin.apply(context))
   }
+
+  const reapplyPlugins = () => {
+    activePlugins.forEach(plugin => plugin.destroy?.())
+    activePlugins.forEach(plugin => plugin.apply(context))
+  }
+
+  const destroy = () => {
+    gallery.destroy()
+    lightbox.destroy()
+
+    Fullscreen.destroy()
+    unsubscribeList()
+    overlayCleanup?.()
+
+    activePlugins.forEach(plugin => {
+      plugin.destroy?.()
+    })
+  }
+
+  return { gallery, destroy, setPlugins, reapplyPlugins }
 }
 
-export function createLightbox(options: LightboxOptions): LightboxApp {
-  return new LightboxApp(options)
+export function ready(): Promise<void> {
+  return new Promise((resolve: () => void) => {
+    if (document.readyState !== 'loading') {
+      resolve()
+    } else {
+      document.addEventListener('DOMContentLoaded', resolve, { once: true })
+    }
+  })
 }

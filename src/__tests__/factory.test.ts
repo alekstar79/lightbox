@@ -1,18 +1,27 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { create } from '../factory'
 import { emitter } from '../core/emitter'
 
+// Мокаем зависимости
 vi.mock('../components/lightbox', () => ({
-  Lightbox: {
-    init: vi.fn().mockReturnValue({
-      open: vi.fn(),
-      close: vi.fn(),
-    }),
-    preview: vi.fn(),
-  }
+  Lightbox: vi.fn().mockImplementation(() => ({
+    open: vi.fn(),
+    close: vi.fn(),
+    destroy: vi.fn(),
+    onViewChange: null,
+  }))
 }))
 
 vi.mock('../components/gallery', () => ({
-  Gallery: vi.fn().mockImplementation(() => ({}))
+  Gallery: vi.fn().mockImplementation(() => {
+    const galleryElement = document.createElement('div')
+    galleryElement.className = 'gallery-container'
+    return {
+      galleryElement,
+      render: vi.fn(),
+      destroy: vi.fn(),
+    }
+  })
 }))
 
 vi.mock('../core/renderer', () => ({
@@ -24,24 +33,22 @@ vi.mock('../core/renderer', () => ({
 }))
 
 vi.mock('../core/bindings', () => ({
-  Bindings: {
-    init: vi.fn().mockReturnValue({
-      track: vi.fn(),
-      untrack: vi.fn(),
-      dispose: vi.fn(),
-      bind: vi.fn(),
-    })
-  }
+  Bindings: vi.fn().mockImplementation(() => ({
+    track: vi.fn(),
+    untrack: vi.fn(),
+    dispose: vi.fn(),
+    bind: vi.fn(),
+  }))
 }))
 
 vi.mock('../core/fullscreen', () => ({
-  Fullscreen: vi.fn().mockImplementation(() => ({
-    toggle: vi.fn(),
-    exit: vi.fn(),
-    on: vi.fn(),
+  Fullscreen: {
+    init: vi.fn(),
+    destroy: vi.fn(),
+    state: 'off',
+    on: vi.fn(() => () => {}),
     off: vi.fn(),
-    get isFullscreen() { return false },
-  }))
+  }
 }))
 
 import { Lightbox } from '../components/lightbox'
@@ -49,13 +56,24 @@ import { Gallery } from '../components/gallery'
 import { Renderer } from '../core/renderer'
 import { Bindings } from '../core/bindings'
 import { Fullscreen } from '../core/fullscreen'
-import { createLightbox, LightboxApp } from '../factory'
 
-describe('LightboxApp', () => {
+const mockedLightbox = vi.mocked(Lightbox)
+const mockedGallery = vi.mocked(Gallery)
+const mockedRenderer = vi.mocked(Renderer)
+const mockedBindings = vi.mocked(Bindings)
+const mockedFullscreen = vi.mocked(Fullscreen)
+
+describe('Factory', () => {
   const mockSource = [{ src: 'img1.jpg' }, { src: 'img2.jpg' }]
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mockedLightbox.mockClear()
+    mockedGallery.mockClear()
+    mockedRenderer.mockClear()
+    mockedBindings.mockClear()
+    mockedFullscreen.init.mockClear()
+    mockedFullscreen.destroy.mockClear()
 
     document.body.innerHTML = `
       <div class="wrapper">
@@ -64,7 +82,9 @@ describe('LightboxApp', () => {
       </div>
       <div class="preview-box">
         <img src="" alt="">
-        <div class="pan-overlay"></div>
+        <div class="image-box">
+          <div class="pan-overlay"></div>
+        </div>
       </div>
       <div class="shadow"></div>
     `
@@ -74,32 +94,23 @@ describe('LightboxApp', () => {
     document.body.innerHTML = ''
   })
 
-  it('should create instance with default options', () => {
-    const app = createLightbox({ source: mockSource })
+  it('should create instance and return an app object', () => {
+    const app = create({ source: mockSource })
 
-    expect(app).toBeInstanceOf(LightboxApp)
-    expect(Fullscreen).toHaveBeenCalledTimes(1)
-    expect(Bindings.init).toHaveBeenCalledTimes(1)
-    expect(Lightbox.init).toHaveBeenCalledTimes(1)
-    expect(Renderer).toHaveBeenCalledTimes(1)
-    expect(Renderer).toHaveBeenCalledWith(
-      expect.objectContaining({
-        scaleSensitivity: 50,
-        minScale: 0.1,
-        maxScale: 30,
-      })
-    )
-    expect(Gallery).toHaveBeenCalledTimes(1)
-    expect(Gallery).toHaveBeenCalledWith(
-      '.wrapper',
-      'input[type="checkbox"]',
-      '.refresh-btn',
-      mockSource
-    )
+    expect(typeof app.destroy).toBe('function')
+    expect(app.gallery).toBeDefined()
+    expect(typeof app.setPlugins).toBe('function')
+    expect(typeof app.reapplyPlugins).toBe('function')
+
+    expect(mockedFullscreen.init).toHaveBeenCalledTimes(1)
+    expect(mockedBindings).toHaveBeenCalledTimes(1)
+    expect(mockedRenderer).toHaveBeenCalledTimes(1)
+    expect(mockedLightbox).toHaveBeenCalledTimes(1)
+    expect(mockedGallery).toHaveBeenCalledTimes(1)
   })
 
   it('should use custom options', () => {
-    createLightbox({
+    create({
       source: mockSource,
       gallerySelector: '.custom-gallery',
       scaleSensitivity: 100,
@@ -107,35 +118,50 @@ describe('LightboxApp', () => {
       maxScale: 20,
     })
 
-    expect(Renderer).toHaveBeenCalledWith(
+    expect(mockedRenderer).toHaveBeenCalledWith(
       expect.objectContaining({
         scaleSensitivity: 100,
         minScale: 0.5,
         maxScale: 20,
       })
     )
-    expect(Gallery).toHaveBeenCalledWith(
-      '.custom-gallery',
-      'input[type="checkbox"]',
-      '.refresh-btn',
-      mockSource
-    )
   })
 
   it('should throw if preview image not found', () => {
     document.body.innerHTML = ''
-
-    expect(() => createLightbox({ source: mockSource })).toThrow('Preview image not found')
+    expect(() => create({ source: mockSource })).toThrow('Lightbox root element not found')
   })
 
-  it('should setup gallery click handler after list:created', () => {
-    createLightbox({ source: mockSource })
+  it('should call destroy on cleanup function', () => {
+    const app = create({ source: mockSource })
+    app.destroy()
 
-    const wrapper = document.querySelector('.wrapper')
+    expect(mockedGallery).toHaveBeenCalledTimes(1)
+    expect(mockedLightbox).toHaveBeenCalledTimes(1)
+    expect(mockedFullscreen.destroy).toHaveBeenCalledTimes(1)
+  })
+
+  it('should setup gallery click handler and open lightbox', () => {
+    create({ source: mockSource })
+
+    // Получаем инстанс Lightbox из мока
+    const lightboxInstance = mockedLightbox.mock.results[0].value as {
+      open: ReturnType<typeof vi.fn>,
+      close: ReturnType<typeof vi.fn>,
+      destroy: ReturnType<typeof vi.fn>,
+    }
+    const mockOpen = vi.fn()
+    lightboxInstance.open = mockOpen
+
+    // Добавляем .gallery в galleryElement
     const galleryEl = document.createElement('div')
-
     galleryEl.className = 'gallery'
-    wrapper?.appendChild(galleryEl)
+    const galleryInstance = mockedGallery.mock.results[0].value as {
+      galleryElement: HTMLElement,
+      render: ReturnType<typeof vi.fn>,
+      destroy: ReturnType<typeof vi.fn>,
+    }
+    galleryInstance.galleryElement.appendChild(galleryEl)
 
     emitter.emit('list:created')
 
@@ -148,109 +174,61 @@ describe('LightboxApp', () => {
       </div>
     `
 
-    const emitSpy = vi.spyOn(emitter, 'emit')
     const link = galleryEl.querySelector('.image a') as HTMLElement
-
     link?.click()
 
-    expect(emitSpy).toHaveBeenCalledWith('open', {
-      currentIdx: 0,
-      list: ['img1.jpg', 'img2.jpg'],
-    })
+    expect(mockOpen).toHaveBeenCalledWith(0, ['img1.jpg', 'img2.jpg'])
   })
 
-  it('should call lightbox.open on open event', () => {
-    const mockLightboxOpen = vi.fn()
+  it('should call panBy on overlay mousemove', () => {
+    const app = create({ source: mockSource })
 
-    vi.mocked(Lightbox.init).mockReturnValueOnce({ open: mockLightboxOpen } as any)
+    const overlay = document.querySelector('.pan-overlay') as HTMLElement
+    const mouseDown = new MouseEvent('mousedown', { button: 0 })
+    overlay.dispatchEvent(mouseDown)
 
-    createLightbox({ source: mockSource })
+    const move = new MouseEvent('mousemove', { bubbles: true })
+    Object.defineProperty(move, 'movementX', { value: 10 })
+    Object.defineProperty(move, 'movementY', { value: 20 })
+    overlay.dispatchEvent(move)
 
-    emitter.emit('open', { currentIdx: 1, list: ['img1.jpg', 'img2.jpg'] })
+    const rendererInstance = mockedRenderer.mock.results[0].value
+    expect(rendererInstance.panBy).toHaveBeenCalledWith({ originX: 10, originY: 20 })
 
-    expect(mockLightboxOpen).toHaveBeenCalledWith(1, ['img1.jpg', 'img2.jpg'])
+    app.destroy()
   })
 
-  describe('pan overlay handlers', () => {
-    it('should add event listeners to overlay', () => {
-      createLightbox({ source: mockSource })
+  it('should call zoom on overlay wheel', () => {
+    const app = create({ source: mockSource })
 
-      const overlay = document.querySelector('.pan-overlay')
-      expect(overlay).toBeDefined()
+    const overlay = document.querySelector('.pan-overlay') as HTMLElement
+    const wheelEvent = new WheelEvent('wheel', { deltaY: 100, clientX: 50, clientY: 60 })
+    overlay.dispatchEvent(wheelEvent)
 
-      const mockRenderer = vi.mocked(Renderer).mock.results[0].value
-      const mouseDownEvent = new MouseEvent('mousedown', { button: 0 })
-
-      overlay?.dispatchEvent(mouseDownEvent)
-
-      const moveEvent = new MouseEvent('mousemove', { bubbles: true })
-      Object.defineProperty(moveEvent, 'movementX', { value: 10 })
-      Object.defineProperty(moveEvent, 'movementY', { value: 20 })
-
-      overlay?.dispatchEvent(moveEvent)
-
-      expect(mockRenderer.panBy).toHaveBeenCalledWith({ originX: 10, originY: 20 })
+    const rendererInstance = mockedRenderer.mock.results[0].value
+    expect(rendererInstance.zoom).toHaveBeenCalledWith({
+      deltaScale: 1,
+      x: 50,
+      y: 60,
     })
 
-    it('should handle wheel event', () => {
-      createLightbox({ source: mockSource })
-
-      const overlay = document.querySelector('.pan-overlay')
-      const mockRenderer = vi.mocked(Renderer).mock.results[0].value
-      const wheelEvent = new WheelEvent('wheel', { deltaY: 100, clientX: 50, clientY: 60 })
-
-      overlay?.dispatchEvent(wheelEvent)
-
-      expect(mockRenderer.zoom).toHaveBeenCalledWith({
-        deltaScale: 1,
-        x: 50,
-        y: 60,
-      })
-    })
-
-    it('should handle double click', () => {
-      createLightbox({ source: mockSource })
-
-      const overlay = document.querySelector('.pan-overlay')
-      const mockRenderer = vi.mocked(Renderer).mock.results[0].value
-
-      overlay?.dispatchEvent(new MouseEvent('dblclick'))
-
-      expect(mockRenderer.panTo).toHaveBeenCalledWith({ originX: 0, originY: 0, scale: 1 })
-    })
-
-    it('should set Lightbox.preview to panTo', () => {
-      createLightbox({ source: mockSource })
-
-      expect(Lightbox.preview).toBeDefined()
-      const mockRenderer = vi.mocked(Renderer).mock.results[0].value
-      ;(Lightbox.preview as any)()
-
-      expect(mockRenderer.panTo).toHaveBeenCalledWith({ originX: 0, originY: 0, scale: 1 })
-    })
+    app.destroy()
   })
 
-  describe('destroy', () => {
-    it('should untrack and dispose bindings', () => {
-      const app = createLightbox({ source: mockSource })
-      const mockBindings = vi.mocked(Bindings.init).mock.results[0].value
+  it('should call panTo on overlay dblclick', () => {
+    const app = create({ source: mockSource })
 
-      app.destroy()
+    const overlay = document.querySelector('.pan-overlay') as HTMLElement
+    overlay.dispatchEvent(new MouseEvent('dblclick'))
 
-      expect(mockBindings.untrack).toHaveBeenCalled()
-      expect(mockBindings.dispose).toHaveBeenCalled()
-    })
+    const rendererInstance = mockedRenderer.mock.results[0].value
+    expect(rendererInstance.panTo).toHaveBeenCalledWith({ originX: 0, originY: 0, scale: 1 })
 
-    it('should replace overlay to remove listeners', () => {
-      const app = createLightbox({ source: mockSource })
-      const overlay = document.querySelector('.pan-overlay')
-      const parent = overlay?.parentNode
+    app.destroy()
+  })
 
-      app.destroy()
-
-      const newOverlay = parent?.querySelector('.pan-overlay')
-      expect(newOverlay).toBeDefined()
-      expect(newOverlay).not.toBe(overlay)
-    })
+  it('should resolve ready when DOM is loaded', async () => {
+    const readyPromise = (await import('../factory')).ready()
+    await expect(readyPromise).resolves.toBeUndefined()
   })
 })

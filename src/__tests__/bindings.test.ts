@@ -9,15 +9,13 @@ describe('Bindings', () => {
   })
 
   afterEach(() => {
-    bindings.untrack()
-    // @ts-ignore
-    Bindings.self = null
+    bindings.dispose()
   })
 
-  it('should create singleton instance', () => {
-    const b1 = Bindings.init()
-    const b2 = Bindings.init()
-    expect(b1).toBe(b2)
+  it('should create non-singleton instance', () => {
+    const b1 = new Bindings()
+    const b2 = new Bindings()
+    expect(b1).not.toBe(b2)
   })
 
   it('should bind a handler to a key', () => {

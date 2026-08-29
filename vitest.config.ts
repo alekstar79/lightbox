@@ -10,7 +10,8 @@ export default defineConfig({
         'src/**/*.test.ts',
         'src/styles.ts',
         'src/main.ts',
-        'src/index.ts'
+        'src/index.ts',
+        'src/core/plugin.ts'
       ],
       reporter: ['text', 'json', 'html'],
       thresholds: {

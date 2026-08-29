@@ -1,152 +1,296 @@
-type FullscreenEvent = 'change' | 'error';
-
-const fullscreenMap = [
-  ['requestFullscreen', 'exitFullscreen', 'fullscreenElement', 'fullscreenEnabled', 'fullscreenchange', 'fullscreenerror'],
-  ['webkitRequestFullscreen', 'webkitExitFullscreen', 'webkitFullscreenElement', 'webkitFullscreenEnabled', 'webkitfullscreenchange', 'webkitfullscreenerror'],
-  ['webkitRequestFullScreen', 'webkitCancelFullScreen', 'webkitCurrentFullScreenElement', 'webkitFullScreenEnabled', 'webkitfullscreenchange', 'webkitfullscreenerror'],
-  ['mozRequestFullScreen', 'mozCancelFullScreen', 'mozFullScreenElement', 'mozFullScreenEnabled', 'mozfullscreenchange', 'mozfullscreenerror'],
-  ['msRequestFullscreen', 'msExitFullscreen', 'msFullscreenElement', 'msFullscreenEnabled', 'MSFullscreenChange', 'MSFullscreenError'],
-]
-
-export interface IFullscreen {
-  readonly isEnabled: boolean;
-  readonly isFullscreen: boolean;
-  readonly element: Element | null;
-  toggle(element?: HTMLElement, options?: FullscreenOptions): Promise<void>;
-  request(element?: HTMLElement, options?: FullscreenOptions): Promise<void>;
-  exit(): Promise<void>;
-  on(event: FullscreenEvent, callback: EventListener): void;
-  off(event: FullscreenEvent, callback: EventListener): void;
+export enum FullscreenState {
+  UNSUPPORTED = 'unsupported',
+  OFF = 'off',
+  ON = 'on'
 }
 
-export class Fullscreen implements IFullscreen {
-  private requestFullscreen: string | null = null
-  private exitFullscreen: string | null = null
-  private fullscreenElement: string | null = null
-  private fullscreenEnabled: string | null = null
-  private fullscreenchange: string | null = null
-  private fullscreenerror: string | null = null
+export enum FullscreenErrorCode {
+  NOT_SUPPORTED = 'NOT_SUPPORTED',
+  IOS_VIDEO_ONLY = 'IOS_VIDEO_ONLY',
+  PERMISSION_DENIED = 'PERMISSION_DENIED'
+}
 
-  private isSupported: boolean = false
+export class FullscreenError extends Error {
+  readonly code: FullscreenErrorCode
 
-  constructor() {
-    this.detectSupport()
+  constructor(code: FullscreenErrorCode, message: string) {
+    super(message)
+    this.name = 'FullscreenError'
+    this.code = code
+  }
+}
+
+export interface FullscreenOptions {
+  navigationUI?: 'auto' | 'show' | 'hide';
+}
+
+export interface FullscreenInfo {
+  element: HTMLElement | null;
+  state: FullscreenState;
+  isVideoOnly: boolean;
+  supportedAPI?: SupportedAPI;
+}
+
+type Prefix = '' | 'webkit' | 'moz' | 'ms';
+
+export type FullscreenRequest = `${Prefix}RequestFullscreen`;
+export type FullscreenExit = `${Prefix}ExitFullscreen` | `mozCancelFullScreen`;
+export type FullscreenElement = `${Prefix}FullscreenElement`;
+export type FullscreenEnabled = `${Prefix}FullscreenEnabled`;
+export type FullscreenChange = `${Prefix}fullscreenchange` | 'MSFullscreenChange';
+export type FullscreenErrorEvent = `${Prefix}fullscreenerror` | 'MSFullscreenError';
+
+export interface SupportedAPI {
+  readonly request: FullscreenRequest;
+  readonly exit: FullscreenExit;
+  readonly element: FullscreenElement;
+  readonly enabled: FullscreenEnabled;
+  readonly change: FullscreenChange;
+  readonly error: FullscreenErrorEvent;
+}
+
+export type EventCallback = (info: FullscreenInfo) => void;
+export type NativeEventHandler = (e: Event) => void;
+
+export class Fullscreen {
+  private static supportedAPI: SupportedAPI | null = null
+  private static eventCallbacks = new Map<string, Set<EventCallback>>()
+  private static isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent)
+  private static isInitialized = false
+
+  private static readonly apiMappings: SupportedAPI[] = [
+    {
+      request: 'requestFullscreen' as FullscreenRequest,
+      exit: 'exitFullscreen' as FullscreenExit,
+      element: 'fullscreenElement' as FullscreenElement,
+      enabled: 'fullscreenEnabled' as FullscreenEnabled,
+      change: 'fullscreenchange' as FullscreenChange,
+      error: 'fullscreenerror' as FullscreenErrorEvent
+    },
+    {
+      request: 'webkitRequestFullscreen' as FullscreenRequest,
+      exit: 'webkitExitFullscreen' as FullscreenExit,
+      element: 'webkitFullscreenElement' as FullscreenElement,
+      enabled: 'webkitFullscreenEnabled' as FullscreenEnabled,
+      change: 'webkitfullscreenchange' as FullscreenChange,
+      error: 'webkitfullscreenerror' as FullscreenErrorEvent
+    },
+    {
+      request: 'mozRequestFullScreen' as FullscreenRequest,
+      exit: 'mozCancelFullScreen' as FullscreenExit,
+      element: 'mozFullScreenElement' as FullscreenElement,
+      enabled: 'mozFullScreenEnabled' as FullscreenEnabled,
+      change: 'mozfullscreenchange' as FullscreenChange,
+      error: 'mozfullscreenerror' as FullscreenErrorEvent
+    },
+    {
+      request: 'msRequestFullscreen' as FullscreenRequest,
+      exit: 'msExitFullscreen' as FullscreenExit,
+      element: 'msFullscreenElement' as FullscreenElement,
+      enabled: 'msFullscreenEnabled' as FullscreenEnabled,
+      change: 'MSFullscreenChange' as FullscreenChange,
+      error: 'MSFullscreenError' as FullscreenErrorEvent
+    }
+  ]
+
+  public static init(): void {
+    if (this.isInitialized || typeof document === 'undefined') return
+
+    this.supportedAPI = this.apiMappings.find(api =>
+      api.request in document.documentElement
+    ) || null
+
+    if (this.supportedAPI) {
+      document.addEventListener(this.supportedAPI.change, this.handleChange)
+      document.addEventListener(this.supportedAPI.error, this.handleError)
+    }
+
+    this.isInitialized = true
   }
 
-  private detectSupport(): void {
-    for (const map of fullscreenMap) {
-      const [req, exit, el, enabled, change, error] = map
-      if (
-        typeof (document as any)[req] !== 'undefined' ||
-        typeof (document.documentElement as any)?.[req] !== 'undefined'
-      ) {
-        this.requestFullscreen = req
-        this.exitFullscreen = exit
-        this.fullscreenElement = el
-        this.fullscreenEnabled = enabled
-        this.fullscreenchange = change
-        this.fullscreenerror = error
-        this.isSupported = true
-        break
-      }
+  public static get isSupported(): boolean {
+    return this.supportedAPI !== null
+  }
+
+  public static get state(): FullscreenState {
+    if (typeof document === 'undefined' || !this.supportedAPI) {
+      return FullscreenState.UNSUPPORTED
+    }
+
+    return (document as any)[this.supportedAPI.element]
+      ? FullscreenState.ON
+      : FullscreenState.OFF
+  }
+
+  public static get element(): HTMLElement | null {
+    return typeof document !== 'undefined' && this.supportedAPI
+      ? (document as any)[this.supportedAPI.element] || null
+      : null
+  }
+
+  public static get isEnabled(): boolean {
+    return typeof document !== 'undefined' && this.supportedAPI
+      ? !!(document as any)[this.supportedAPI.enabled]
+      : false
+  }
+
+  public static async enter(
+    element: HTMLElement = document.documentElement,
+    options: FullscreenOptions = {}
+  ): Promise<FullscreenState> {
+    if (!this.isSupported) {
+      throw new FullscreenError(
+        FullscreenErrorCode.NOT_SUPPORTED,
+        'Fullscreen API not supported'
+      )
+    }
+    if (this.isIOS && element.tagName !== 'VIDEO') {
+      throw new FullscreenError(
+        FullscreenErrorCode.IOS_VIDEO_ONLY,
+        'iOS supports fullscreen only for video elements'
+      )
+    }
+    if (!this.isEnabled) {
+      throw new FullscreenError(
+        FullscreenErrorCode.NOT_SUPPORTED,
+        'Fullscreen not enabled'
+      )
+    }
+
+    return this.executeFullscreenRequest(element, options)
+  }
+
+  public static async exit(): Promise<FullscreenState> {
+    if (!this.isSupported || this.state === FullscreenState.OFF) {
+      return FullscreenState.OFF
+    }
+
+    await this.executeFullscreenExit()
+    return this.state
+  }
+
+  public static async toggle(
+    element?: HTMLElement,
+    options?: FullscreenOptions
+  ): Promise<FullscreenState> {
+    return this.state === FullscreenState.ON
+      ? this.exit()
+      : this.enter(element || document.documentElement, options)
+  }
+
+  public static info(): FullscreenInfo {
+    return {
+      element: this.element,
+      state: this.state,
+      isVideoOnly: this.isIOS,
+      supportedAPI: this.supportedAPI || undefined
     }
   }
 
-  public get isEnabled(): boolean {
-    if (!this.isSupported) return false
+  public static on(event: 'change' | 'error', callback: EventCallback): () => void {
+    const callbacks = this.eventCallbacks.get(event) || new Set()
 
-    const prop = this.fullscreenEnabled
-    return prop ? Boolean((document as any)[prop]) : false
+    callbacks.add(callback)
+    this.eventCallbacks.set(event, callbacks)
+
+    return () => this.off(event, callback)
   }
 
-  public get isFullscreen(): boolean {
-    if (!this.isSupported) return false
+  public static off(event: 'change' | 'error', callback: EventCallback): void {
+    const callbacks = this.eventCallbacks.get(event)
 
-    const prop = this.fullscreenElement
-    return prop ? Boolean((document as any)[prop]) : false
+    if (callbacks) {
+      callbacks.delete(callback)
+    }
   }
 
-  public get element(): Element | null {
-    if (!this.isSupported) return null
+  public static destroy(): void {
+    if (!this.isInitialized || typeof document === 'undefined') return
 
-    const prop = this.fullscreenElement
-    return prop ? (document as any)[prop] || null : null
+    if (this.supportedAPI) {
+      document.removeEventListener(this.supportedAPI.change, this.handleChange)
+      document.removeEventListener(this.supportedAPI.error, this.handleError)
+    }
+
+    this.eventCallbacks.clear()
+    this.isInitialized = false
   }
 
-  public toggle(element?: HTMLElement, options?: FullscreenOptions): Promise<void> {
-    return this.isFullscreen ? this.exit() : this.request(element, options)
-  }
-
-  public request(element: HTMLElement = document.documentElement, options?: FullscreenOptions): Promise<void> {
-    if (!this.isSupported) return Promise.resolve()
-
+  private static async executeFullscreenRequest(
+    element: HTMLElement,
+    options: FullscreenOptions
+  ): Promise<FullscreenState> {
     return new Promise((resolve, reject) => {
-      const onFullScreenEntered = () => {
-        this.off('change', onFullScreenEntered)
-        resolve()
+      const onChange: NativeEventHandler = () => {
+        this.offNativeEvents()
+        resolve(this.state)
       }
 
-      this.on('change', onFullScreenEntered)
+      const onError: NativeEventHandler = () => {
+        this.offNativeEvents()
 
-      const requestMethod = (element as any)[this.requestFullscreen!]
-      if (typeof requestMethod !== 'function') {
-        reject(new Error('Fullscreen request method not found'))
-        return;
+        reject(new FullscreenError(
+          FullscreenErrorCode.PERMISSION_DENIED,
+          'Permission denied'
+        ))
       }
 
-      const result = requestMethod.call(element, options)
+      this.onNativeEvents(onChange, onError)
 
-      if (result instanceof Promise) {
-        result.then(onFullScreenEntered).catch(reject)
+      try {
+        (element as any)[this.supportedAPI!.request](options)
+      } catch (error) {
+        this.offNativeEvents()
+        reject(error)
       }
     })
   }
 
-  public exit(): Promise<void> {
-    if (!this.isSupported) return Promise.resolve()
+  private static async executeFullscreenExit(): Promise<void> {
+    if (!this.supportedAPI) return
 
-    return new Promise((resolve, reject) => {
-      if (!this.isFullscreen) {
-        resolve()
-        return
-      }
-
-      const onFullScreenExit = () => {
-        this.off('change', onFullScreenExit)
+    return new Promise((resolve) => {
+      const onChange: NativeEventHandler = () => {
+        this.offNativeEvents()
         resolve()
       }
 
-      this.on('change', onFullScreenExit)
-
-      const exitMethod = (document as any)[this.exitFullscreen!]
-      if (typeof exitMethod !== 'function') {
-        reject(new Error('Fullscreen exit method not found'))
-        return
+      const onError: NativeEventHandler = () => {
+        this.offNativeEvents()
+        resolve()
       }
 
-      const result = exitMethod.call(document)
+      this.onNativeEvents(onChange, onError)
 
-      if (result instanceof Promise) {
-        result.then(onFullScreenExit).catch(reject)
+      try {
+        (document as any)[this.supportedAPI!.exit]()
+      } catch {
+        this.offNativeEvents()
+        resolve()
       }
     })
   }
 
-  public on(event: FullscreenEvent, callback: EventListener): void {
-    if (!this.isSupported) return
+  private static onNativeEvents(
+    onChange: NativeEventHandler,
+    onError: NativeEventHandler
+  ): void {
+    if (!this.supportedAPI) return
 
-    const eventName = event === 'change' ? this.fullscreenchange : this.fullscreenerror
-    if (eventName) {
-      document.addEventListener(eventName, callback, false);
-    }
+    document.addEventListener(this.supportedAPI.change, onChange, { once: true })
+    document.addEventListener(this.supportedAPI.error, onError, { once: true })
   }
 
-  public off(event: FullscreenEvent, callback: EventListener): void {
-    if (!this.isSupported) return
+  private static offNativeEvents(): void {
+  }
 
-    const eventName = event === 'change' ? this.fullscreenchange : this.fullscreenerror
-    if (eventName) {
-      document.removeEventListener(eventName, callback, false);
-    }
+  private static readonly handleChange: NativeEventHandler = (_e: Event): void => {
+    const info = this.info()
+    this.eventCallbacks.get('change')?.forEach(cb => cb(info))
+  }
+
+  private static readonly handleError: NativeEventHandler = (_e: Event): void => {
+    const info = this.info()
+    this.eventCallbacks.get('error')?.forEach(cb => cb(info))
   }
 }

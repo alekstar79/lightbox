@@ -7,28 +7,29 @@ export default defineConfig({
     dts({
       insertTypesEntry: true,
       outDir: 'lib',
+      entryRoot: 'src',
+      copyDtsFiles: false,
       exclude: [
-        'src/__tests__',
         'src/**/*.test.ts',
         'src/main.ts'
-      ],
-      entryRoot: 'src',
-      copyDtsFiles: false
+      ]
     })
   ],
   build: {
     outDir: 'lib',
     copyPublicDir: false,
     lib: {
-      entry: resolve(__dirname, 'src/index.ts'),
       name: 'Lightbox',
       fileName: 'index',
+      entry: resolve(__dirname, 'src/index.ts'),
       formats: ['es']
     },
-    rolldownOptions: {
+    rollupOptions: {
       output: {
         assetFileNames: (assetInfo) => {
-          if (assetInfo.names?.includes('index.css')) {
+          const cssName = assetInfo.names?.find(name => name.endsWith('.css'))
+
+          if (cssName) {
             return 'styles.css'
           }
 

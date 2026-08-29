@@ -26,12 +26,7 @@ class Keybind {
 }
 
 export class Bindings {
-  private static self: Bindings | null = null
   private keybinds: Set<Keybind> = new Set()
-
-  public static init(): Bindings {
-    return Bindings.self ||= new Bindings()
-  }
 
   constructor() {
     this.handler = this.handler.bind(this)

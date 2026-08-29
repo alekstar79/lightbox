@@ -1,15 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { Fullscreen } from '../core/fullscreen'
+import { Fullscreen, FullscreenState, FullscreenErrorCode } from '../core/fullscreen'
+
+const originalRequestFullscreen = Element.prototype.requestFullscreen
+const originalExitFullscreen = document.exitFullscreen
 
 describe('Fullscreen', () => {
-  let fullscreen: Fullscreen
-  let mockRequestFullscreen: any
-  let mockExitFullscreen: any
-
-  const originalRequestFullscreen = Element.prototype.requestFullscreen
-  const originalExitFullscreen = document.exitFullscreen
-  const originalDocument = globalThis.document
-
   beforeEach(() => {
     vi.clearAllMocks()
 
@@ -25,24 +20,20 @@ describe('Fullscreen', () => {
       writable: true,
     })
 
-    mockRequestFullscreen = vi.fn().mockResolvedValue(undefined)
-    mockExitFullscreen = vi.fn().mockResolvedValue(undefined)
+    Element.prototype.requestFullscreen = vi.fn().mockResolvedValue(undefined)
+    document.exitFullscreen = vi.fn().mockResolvedValue(undefined)
 
-    Element.prototype.requestFullscreen = mockRequestFullscreen
-    document.exitFullscreen = mockExitFullscreen
-
-    fullscreen = new Fullscreen()
+    Fullscreen.init()
   })
 
   afterEach(() => {
     Element.prototype.requestFullscreen = originalRequestFullscreen
     document.exitFullscreen = originalExitFullscreen
-    vi.stubGlobal('document', originalDocument)
-    vi.clearAllMocks()
+    Fullscreen.destroy()
   })
 
   it('should check if fullscreen is enabled', () => {
-    expect(fullscreen.isEnabled).toBe(true)
+    expect(Fullscreen.isEnabled).toBe(true)
   })
 
   it('should check if fullscreen is active', () => {
@@ -51,17 +42,15 @@ describe('Fullscreen', () => {
       writable: true,
       configurable: true,
     })
-    expect(fullscreen.isFullscreen).toBe(true)
+    expect(Fullscreen.state).toBe(FullscreenState.ON)
   })
 
   it('should toggle fullscreen (enter)', async () => {
     const element = document.createElement('div')
-
-    element.requestFullscreen = mockRequestFullscreen
-
-    await fullscreen.toggle(element)
-
-    expect(mockRequestFullscreen).toHaveBeenCalledTimes(1)
+    const spy = vi.spyOn(Fullscreen, 'enter').mockResolvedValue(FullscreenState.ON)
+    await Fullscreen.toggle(element)
+    expect(spy).toHaveBeenCalledWith(element, undefined)
+    spy.mockRestore()
   })
 
   it('should toggle fullscreen (exit)', async () => {
@@ -70,84 +59,70 @@ describe('Fullscreen', () => {
       writable: true,
       configurable: true,
     })
-
-    await fullscreen.toggle()
-
-    expect(mockExitFullscreen).toHaveBeenCalledTimes(1)
-  })
-
-  it('should exit fullscreen', async () => {
-    Object.defineProperty(document, 'fullscreenElement', {
-      value: document.createElement('div'),
-      writable: true,
-      configurable: true,
-    })
-
-    await fullscreen.exit()
-
-    expect(mockExitFullscreen).toHaveBeenCalledTimes(1)
-  })
-
-  it('should handle requestFullscreen without promise (legacy)', async () => {
-    const element = document.createElement('div')
-    const legacyRequest = vi.fn()
-
-    element.requestFullscreen = legacyRequest
-
-    const promise = fullscreen.request(element)
-
-    expect(legacyRequest).toHaveBeenCalledTimes(1)
-
-    let resolved = false
-    promise.then(() => { resolved = true })
-
-    document.dispatchEvent(new Event('fullscreenchange'))
-
-    await promise
-    expect(resolved).toBe(true)
+    const spy = vi.spyOn(Fullscreen, 'exit').mockResolvedValue(FullscreenState.OFF)
+    await Fullscreen.toggle()
+    expect(spy).toHaveBeenCalledTimes(1)
+    spy.mockRestore()
   })
 
   it('should handle fullscreen change events', () => {
     const mockCallback = vi.fn()
-
-    fullscreen.on('change', mockCallback)
-
+    Fullscreen.on('change', mockCallback)
     document.dispatchEvent(new Event('fullscreenchange'))
-
     expect(mockCallback).toHaveBeenCalledTimes(1)
+    expect(mockCallback).toHaveBeenCalledWith(expect.objectContaining({
+      state: expect.any(String)
+    }))
   })
 
   it('should remove event listeners', () => {
     const mockCallback = vi.fn()
-
-    fullscreen.on('change', mockCallback)
-    fullscreen.off('change', mockCallback)
-
+    const unsubscribe = Fullscreen.on('change', mockCallback)
+    unsubscribe()
     document.dispatchEvent(new Event('fullscreenchange'))
-
     expect(mockCallback).not.toHaveBeenCalled()
   })
 
   it('should return fallback methods when fullscreen is not supported', async () => {
     const newDoc = document.implementation.createHTMLDocument('test')
-
     delete (newDoc as any).exitFullscreen
     Object.defineProperty(newDoc, 'fullscreenEnabled', { value: false, configurable: true })
-
     delete (Element.prototype as any).requestFullscreen
 
     vi.stubGlobal('document', newDoc)
+    Fullscreen.destroy()
+    Fullscreen.init()
 
-    const fallback = new Fullscreen()
+    expect(Fullscreen.isSupported).toBe(false)
+    expect(Fullscreen.state).toBe(FullscreenState.UNSUPPORTED)
 
-    expect(fallback.isEnabled).toBe(false)
-    expect(fallback.isFullscreen).toBe(false)
-    expect(fallback.element).toBe(null)
+    await expect(Fullscreen.toggle()).rejects.toThrow('Fullscreen API not supported')
+    await expect(Fullscreen.exit()).resolves.toBe(FullscreenState.OFF)
 
-    await expect(fallback.toggle()).resolves.toBeUndefined()
-    await expect(fallback.request()).resolves.toBeUndefined()
-    await expect(fallback.exit()).resolves.toBeUndefined()
-    expect(() => fallback.on('change', vi.fn())).not.toThrow()
-    expect(() => fallback.off('change', vi.fn())).not.toThrow()
+    vi.unstubAllGlobals()
+  })
+
+  it('should throw iOS_VIDEO_ONLY when trying to enter fullscreen on non-video element on iOS', async () => {
+    const originalIsIOS = (Fullscreen as any).isIOS
+    ;(Fullscreen as any).isIOS = true
+
+    const div = document.createElement('div')
+    await expect(Fullscreen.enter(div)).rejects.toMatchObject({
+      code: FullscreenErrorCode.IOS_VIDEO_ONLY,
+    })
+
+    ;(Fullscreen as any).isIOS = originalIsIOS
+  })
+
+  it('should reject on request error', async () => {
+    Element.prototype.requestFullscreen = vi.fn().mockImplementation(() => {
+      throw new Error('request failed')
+    })
+
+    Fullscreen.destroy()
+    Fullscreen.init()
+
+    const div = document.createElement('div')
+    await expect(Fullscreen.enter(div)).rejects.toThrow('request failed')
   })
 })

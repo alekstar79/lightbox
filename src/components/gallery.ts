@@ -5,35 +5,38 @@ export interface ImageSource {
 }
 
 export interface GalleryOptions {
-  containerSelector: string;
-  setupFn?: (gallery: Gallery) => boolean
+  container: HTMLElement;
   source: ImageSource[];
+  setupFn?: (gallery: Gallery) => void;
+  classMap?: string;
 }
 
 export class Gallery {
   private readonly galleryContainer: HTMLElement
+  private readonly container: HTMLElement
+  private readonly source: ImageSource[]
 
-  private container: HTMLElement
-  private source: ImageSource[]
+  public get galleryElement() {
+    return this.galleryContainer
+  }
 
-  constructor({ containerSelector, source, setupFn }: GalleryOptions) {
-    this.container = document.querySelector(containerSelector) as HTMLElement
+  constructor({ container, source, setupFn }: GalleryOptions) {
+    this.container = container
     this.source = source
 
     this.galleryContainer = document.createElement('div')
     this.galleryContainer.className = 'gallery-container'
     this.container.appendChild(this.galleryContainer)
 
-    let toggler = true
     if (typeof setupFn === 'function') {
-      toggler = setupFn(this)
+      setupFn(this)
     }
 
-    this.render(toggler).catch(console.error)
+    this.render()
     emitter.emit('window:loaded')
   }
 
-  private async createList(isImagesList: boolean): Promise<HTMLElement[]> {
+  private createList(): HTMLElement[] {
     const div = document.createElement('div')
     const flow: HTMLElement[] = []
 
@@ -46,16 +49,10 @@ export class Gallery {
       .forEach(({ src }) => {
         const item = document.createElement('div')
 
-        if (isImagesList) {
-          item.classList.add('image', 'content', 'flow')
-          item.style.backgroundImage = `url(images/thumb/${src})`
-          item.innerHTML = `<img src="images/${src}" loading="lazy" alt="" />`
-          flow.push(item)
-        } else {
-          item.classList.add('image')
-          item.innerHTML = `<a href="javascript:void(0)">${src}</a>`
-        }
+        item.classList.add('image', 'content', 'flow')
+        item.innerHTML = `<img src="${src}" alt="" />`
 
+        flow.push(item)
         div.appendChild(item)
       })
 
@@ -68,22 +65,25 @@ export class Gallery {
   }
 
   private loadImages(flow: HTMLElement[]): void {
-    flow.forEach(div => {
-      const img = div.querySelector('img')
+    flow.forEach(container => {
+      const img = container.querySelector('img')
+      if (!img) return
 
-      if (img) {
-        const loaded = () => div.classList.add('loaded')
+      const loadHandler = () => container.classList.add('loaded')
 
-        if (!img.complete) {
-          img.addEventListener('load', loaded)
-        } else {
-          loaded()
-        }
+      if (img.complete) {
+        loadHandler()
+      } else {
+        img.addEventListener('load', loadHandler, { once: true })
       }
     })
   }
 
-  public async render(toggler: boolean = true): Promise<void> {
-    this.loadImages(await this.createList(toggler))
+  public render(): void {
+    this.loadImages(this.createList())
+  }
+
+  public destroy(): void {
+    this.galleryContainer.remove()
   }
 }
