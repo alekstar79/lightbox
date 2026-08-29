@@ -2,7 +2,6 @@ import { create, ready } from './factory'
 import { DirectionalHoverPlugin } from './plugins/directional-hover'
 
 import './styles/main.scss'
-import './plugins/directional-hover/styles.scss'
 
 (async () => {
   const source = Array.from({ length: 28 }, (_, i) => ({

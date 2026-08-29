@@ -1,4 +1,5 @@
 import { Plugin, PluginContext } from '../../core/plugin'
+import './styles.scss'
 
 const directionsMap: Record<number, string> = { 0: 'top', 1: 'right', 2: 'bottom', 3: 'left' }
 const directions = Object.values(directionsMap)

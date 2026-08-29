@@ -13,28 +13,23 @@ export default defineConfig({
         'src/**/*.test.ts',
         'src/main.ts'
       ]
-    })
+    }),
   ],
   build: {
     outDir: 'lib',
     copyPublicDir: false,
+    cssCodeSplit: true,
     lib: {
-      name: 'Lightbox',
-      fileName: 'index',
-      entry: resolve(__dirname, 'src/index.ts'),
+      entry: {
+        index: resolve(__dirname, 'src/index.ts'),
+        'directional-hover': resolve(__dirname, 'src/plugins/directional-hover/index.ts')
+      },
       formats: ['es']
     },
     rollupOptions: {
       output: {
-        assetFileNames: (assetInfo) => {
-          const cssName = assetInfo.names?.find(name => name.endsWith('.css'))
-
-          if (cssName) {
-            return 'styles.css'
-          }
-
-          return '[name].[ext]'
-        }
+        entryFileNames: '[name].js',
+        assetFileNames: '[name][extname]'
       }
     }
   }
