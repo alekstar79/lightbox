@@ -1,12 +1,17 @@
 import { create, ready, DirectionalHoverPlugin } from '@alekstar79/lightbox'
+import type { LightboxOptions, ImageSource } from '@alekstar79/lightbox'
 
 import '@alekstar79/lightbox/lib/index.css'
 import '@alekstar79/lightbox/lib/directional-hover.css'
 import './styles.scss'
 
 (async () => {
-  const source = Array.from({ length: 28 }, (_, i) => ({
+  const source: ImageSource[] = Array.from({ length: 28 }, (_, i) => ({
     src: `images/img-${`${i + 1}`.padStart(2, '0')}.jpg`,
+  }))
+
+  const thumb: ImageSource[] = Array.from({ length: 28 }, (_, i) => ({
+    src: `thumb/img-${`${i + 1}`.padStart(2, '0')}.jpg`,
   }))
 
   await ready()
@@ -17,10 +22,11 @@ import './styles.scss'
   const getPlugins = () => checkbox.checked ? [new DirectionalHoverPlugin()] : []
 
   const app = create({
-    source,
     gallerySelector: '.wrapper',
-    plugins: getPlugins()
-  })
+    plugins: getPlugins(),
+    source,
+    thumb
+  } as LightboxOptions)
 
   checkbox.addEventListener('change', () => {
     app.setPlugins(getPlugins())
