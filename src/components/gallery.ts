@@ -15,9 +15,14 @@ export class Gallery {
   private readonly galleryContainer: HTMLElement
   private readonly container: HTMLElement
   private readonly source: ImageSource[]
+  private renderedOrder: number[] = []
 
-  public get galleryElement() {
+  public get galleryElement(): HTMLElement {
     return this.galleryContainer
+  }
+
+  public get renderedOrderIndices(): readonly number[] {
+    return this.renderedOrder
   }
 
   constructor({ container, source, setupFn }: GalleryOptions) {
@@ -42,19 +47,21 @@ export class Gallery {
 
     div.classList.add('gallery', 'grid')
 
-    this.source
-      .map(a => ({ value: a, sort: Math.random() }))
+    const shuffled = this.source
+      .map((value, index) => ({ value, index, sort: Math.random() }))
       .sort((a, b) => a.sort - b.sort)
-      .map(a => a.value)
-      .forEach(({ src }) => {
-        const item = document.createElement('div')
 
-        item.classList.add('image', 'content', 'flow')
-        item.innerHTML = `<img src="${src}" alt="" />`
+    this.renderedOrder = shuffled.map(item => item.index)
 
-        flow.push(item)
-        div.appendChild(item)
-      })
+    shuffled.forEach(({ value: { src } }) => {
+      const item = document.createElement('div')
+
+      item.classList.add('image', 'content', 'flow')
+      item.innerHTML = `<img src="${src}" alt="" />`
+
+      flow.push(item)
+      div.appendChild(item)
+    })
 
     this.galleryContainer.innerHTML = ''
     this.galleryContainer.appendChild(div)

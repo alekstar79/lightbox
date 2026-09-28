@@ -84,7 +84,6 @@ export function create(options: LightboxOptions): LightboxApp {
 
   const unsubscribeList = emitter.on('list:created', () => {
     const galleryEl = gallery.galleryElement.querySelector('.gallery')
-
     if (!galleryEl) return
 
     galleryEl.addEventListener('click', (e) => {
@@ -92,24 +91,14 @@ export function create(options: LightboxOptions): LightboxApp {
 
       if (target.tagName !== 'IMG') return
 
-      const link = (target as HTMLImageElement).src || ''
-      const list: string[] = []
+      const imgs = Array.from(galleryEl.querySelectorAll<HTMLImageElement>('img'))
+      const clickedIndex = imgs.indexOf(target as HTMLImageElement)
+      if (clickedIndex === -1) return
 
-      let clickedIndex: number | undefined
+      const order = gallery.renderedOrderIndices
+      const list = order.map(i => source[i]?.src ?? '')
 
-      [...source].forEach(({ src = '' }: ImageSource, idx) => {
-        const path = src.split('/').at(-1) as string
-
-        if (src && link.includes(path)) {
-          clickedIndex = idx
-        }
-
-        list.push(src)
-      })
-
-      if (clickedIndex !== undefined) {
-        lightbox.open(clickedIndex, list)
-      }
+      lightbox.open(clickedIndex, list)
     })
   })
 
