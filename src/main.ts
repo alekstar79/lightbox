@@ -1,41 +1,50 @@
-import { create, ready } from './factory'
+import { Plugin } from './core/plugin'
+
 import { DirectionalHoverPlugin } from './plugins/directional-hover'
+import { ParallaxColumnsPlugin } from './plugins/parallax-columns'
+import { create, ready } from './factory'
 
 import './styles/main.scss'
 
-(async () => {
-  const source = Array.from({ length: 28 }, (_, i) => ({
-    src: `images/img-${`${i + 1}`.padStart(2, '0')}.jpg`,
-  }))
+const source = Array.from({ length: 44 }, (_, i) => ({
+  src: `images/img-${`${i + 1}`.padStart(2, '0')}.jpg`,
+}))
 
-  const thumb = Array.from({ length: 28 }, (_, i) => ({
-    src: `thumb/img-${`${i + 1}`.padStart(2, '0')}.jpg`,
-  }))
+const thumb = Array.from({ length: 44 }, (_, i) => ({
+  src: `thumb/img-${`${i + 1}`.padStart(2, '0')}.jpg`,
+}))
 
-  await ready()
+await ready()
 
-  const checkbox = document.querySelector('input[type="checkbox"]') as HTMLInputElement
-  const refresh = document.querySelector('.refresh-btn') as HTMLElement
+const checkbox = document.querySelector('input[type="checkbox"]') as HTMLInputElement
+const refresh = document.querySelector('.refresh-btn') as HTMLElement
 
-  const getPlugins = () => checkbox.checked ? [new DirectionalHoverPlugin()] : []
+const getPlugins = (): Plugin[] => {
+  const plugins: Plugin[] = [new ParallaxColumnsPlugin()]
 
-  const app = create({
-    gallerySelector: '.wrapper',
-    plugins: getPlugins(),
-    source,
-    thumb
-  })
+  if (checkbox.checked) {
+    plugins.push(new DirectionalHoverPlugin())
+  }
 
-  checkbox.addEventListener('change', () => {
-    app.setPlugins(getPlugins())
-  })
+  return plugins
+}
 
-  refresh.addEventListener('click', () => {
-    app.gallery.render()
-    app.reapplyPlugins()
-  })
+const app = create({
+  gallerySelector: '.wrapper',
+  plugins: getPlugins(),
+  source,
+  thumb
+})
 
-  window.addEventListener('beforeunload', () => {
-    app.destroy()
-  })
-})()
+checkbox.addEventListener('change', () => {
+  app.setPlugins(getPlugins())
+})
+
+refresh.addEventListener('click', () => {
+  app.gallery.render()
+  app.reapplyPlugins()
+})
+
+window.addEventListener('beforeunload', () => {
+  app.destroy()
+})

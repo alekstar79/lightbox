@@ -18,5 +18,7 @@ export { emitter } from './core/emitter'
 export { create, ready } from './factory'
 
 export { DirectionalHoverPlugin } from './plugins/directional-hover'
+export { ParallaxColumnsPlugin } from './plugins/parallax-columns'
+export type { ParallaxColumnsOptions } from './plugins/parallax-columns'
 
 import './styles/library.scss'
