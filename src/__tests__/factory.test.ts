@@ -13,11 +13,12 @@ vi.mock('../components/lightbox', () => ({
 }))
 
 vi.mock('../components/gallery', () => ({
-  Gallery: vi.fn().mockImplementation(() => {
+  Gallery: vi.fn().mockImplementation(({ source }: { source: { src: string }[] }) => {
     const galleryElement = document.createElement('div')
     galleryElement.className = 'gallery-container'
     return {
       galleryElement,
+      renderedOrderIndices: source.map((_, i) => i),
       render: vi.fn(),
       destroy: vi.fn(),
     }
@@ -144,7 +145,6 @@ describe('Factory', () => {
   it('should setup gallery click handler and open lightbox', () => {
     create({ source: mockSource })
 
-    // Получаем инстанс Lightbox из мока
     const lightboxInstance = mockedLightbox.mock.results[0].value as {
       open: ReturnType<typeof vi.fn>,
       close: ReturnType<typeof vi.fn>,
@@ -153,11 +153,11 @@ describe('Factory', () => {
     const mockOpen = vi.fn()
     lightboxInstance.open = mockOpen
 
-    // Добавляем .gallery в galleryElement
     const galleryEl = document.createElement('div')
     galleryEl.className = 'gallery'
     const galleryInstance = mockedGallery.mock.results[0].value as {
       galleryElement: HTMLElement,
+      renderedOrderIndices: number[],
       render: ReturnType<typeof vi.fn>,
       destroy: ReturnType<typeof vi.fn>,
     }
@@ -167,15 +167,15 @@ describe('Factory', () => {
 
     galleryEl.innerHTML = `
       <div class="image">
-        <a href="javascript:void(0)">img1.jpg</a>
+        <img src="img1.jpg" alt="">
       </div>
       <div class="image">
-        <a href="javascript:void(0)">img2.jpg</a>
+        <img src="img2.jpg" alt="">
       </div>
     `
 
-    const link = galleryEl.querySelector('.image a') as HTMLElement
-    link?.click()
+    const img = galleryEl.querySelector('.image img') as HTMLImageElement
+    img.click()
 
     expect(mockOpen).toHaveBeenCalledWith(0, ['img1.jpg', 'img2.jpg'])
   })

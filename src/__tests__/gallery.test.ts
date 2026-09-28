@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { Gallery } from '../components/gallery'
+import { emitter } from '../core/emitter'
 
 describe('Gallery', () => {
   const source = [
@@ -59,5 +60,34 @@ describe('Gallery', () => {
     gallery.destroy()
 
     expect(document.querySelector('.gallery-container')).toBeNull()
+  })
+
+  it('exposes renderedOrderIndices as a permutation of source indices', () => {
+    gallery = new Gallery({ container, source })
+    const order = [...gallery.renderedOrderIndices]
+    expect(order.length).toBe(source.length)
+    expect([...order].sort((a, b) => a - b)).toEqual([0, 1, 2])
+  })
+
+  it('updates renderedOrderIndices after re-render', () => {
+    gallery = new Gallery({ container, source })
+    gallery.render()
+    const order = [...gallery.renderedOrderIndices]
+    expect(order.length).toBe(source.length)
+    expect([...order].sort((a, b) => a - b)).toEqual([0, 1, 2])
+  })
+
+  it('calls setupFn with gallery instance', () => {
+    const setupFn = vi.fn()
+    gallery = new Gallery({ container, source, setupFn })
+    expect(setupFn).toHaveBeenCalledWith(gallery)
+  })
+
+  it('emits list:created on construction', () => {
+    const listener = vi.fn()
+    const unsubscribe = emitter.on('list:created', listener)
+    gallery = new Gallery({ container, source })
+    expect(listener).toHaveBeenCalled()
+    unsubscribe()
   })
 })

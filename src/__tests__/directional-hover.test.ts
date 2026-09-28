@@ -127,4 +127,14 @@ describe('DirectionalHoverPlugin', () => {
     expect(image.querySelector('.placeholder')).toBeNull()
     expect(image.querySelector('img')?.classList.contains('real-image')).toBe(false)
   })
+
+  it('destroy handles items without an img element', () => {
+    container.innerHTML = `
+      <div class="gallery">
+        <div class="image"></div>
+      </div>
+    `
+    plugin.apply(baseContext())
+    expect(() => plugin.destroy()).not.toThrow()
+  })
 })

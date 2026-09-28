@@ -131,4 +131,41 @@ describe('Lightbox', () => {
     expect(mockBindings.bind).toHaveBeenCalledTimes(1)
     expect(mockBindings.track).toHaveBeenCalledTimes(1)
   })
+
+  it('toggles fullscreen class on fullscreen change', () => {
+    vi.spyOn(Fullscreen, 'state', 'get').mockReturnValue(FullscreenState.ON)
+    ;(lightbox as unknown as { onFullscreenChange: () => void }).onFullscreenChange()
+
+    expect(deps.root.classList.contains('fullscreen')).toBe(true)
+    expect(deps.imageBox.classList.contains('fullscreen')).toBe(true)
+
+    vi.spyOn(Fullscreen, 'state', 'get').mockReturnValue(FullscreenState.OFF)
+    ;(lightbox as unknown as { onFullscreenChange: () => void }).onFullscreenChange()
+
+    expect(deps.root.classList.contains('fullscreen')).toBe(false)
+    expect(deps.imageBox.classList.contains('fullscreen')).toBe(false)
+  })
+
+  it('exits fullscreen when closing while in fullscreen', async () => {
+    vi.spyOn(Fullscreen, 'state', 'get').mockReturnValue(FullscreenState.ON)
+    lightbox.open(0, ['img1.jpg'])
+    await lightbox.close()
+    expect(Fullscreen.exit).toHaveBeenCalled()
+  })
+
+  it('does not navigate past the last image', () => {
+    lightbox.open(1, ['img1.jpg', 'img2.jpg'])
+    const nextBtn = document.querySelector('.next') as HTMLElement
+    nextBtn.click()
+    const currentImg = document.querySelector('.current-img') as HTMLElement
+    expect(currentImg.textContent).toBe('2')
+  })
+
+  it('does not navigate before the first image', () => {
+    lightbox.open(0, ['img1.jpg', 'img2.jpg'])
+    const prevBtn = document.querySelector('.prev') as HTMLElement
+    prevBtn.click()
+    const currentImg = document.querySelector('.current-img') as HTMLElement
+    expect(currentImg.textContent).toBe('1')
+  })
 })
