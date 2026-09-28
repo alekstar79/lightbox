@@ -10,11 +10,10 @@ export class Emitter {
   private awaitEventBinding: AwaitEvent[] = []
 
   private applyAwaitEvent(id: string, fn: EventListener): void {
-    const index = this.awaitEventBinding.findIndex(e => e.id === id)
+    const pending = this.awaitEventBinding.find(e => e.id === id)
 
-    if (index > -1) {
-      fn.apply(this, this.awaitEventBinding[index].data)
-      this.awaitEventBinding.splice(index, 1)
+    if (pending) {
+      fn.apply(this, pending.data)
     }
   }
 
@@ -44,11 +43,16 @@ export class Emitter {
   }
 
   public emit(id: string, ...data: any[]): void {
-    if (!this.events[id]) {
+    this.awaitEventBinding = this.awaitEventBinding.filter(e => e.id !== id)
+
+    const listeners = this.events[id]
+
+    if (!listeners || listeners.length === 0) {
       this.awaitEventBinding.push({ id, data })
+      return
     }
 
-    (this.events[id] || []).forEach(fn => fn.apply(this, data))
+    listeners.forEach(fn => fn.apply(this, data))
   }
 }
 
