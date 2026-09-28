@@ -272,12 +272,6 @@ yarn install
 - `yarn test` – run unit tests.
 - `yarn coverage` – run tests with coverage report.
 
-### Regenerating this README
-
-```bash
-node scripts/generate-readme.mjs
-```
-
 ---
 
 ## License
