@@ -44,7 +44,7 @@
   "files": [
     "lib",
     "package.json",
-    "README.md",
+    "README_OLD.md",
     "LICENSE"
   ],
   "scripts": {
