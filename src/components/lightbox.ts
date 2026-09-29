@@ -1,4 +1,5 @@
 import { Fullscreen, FullscreenState } from '../core/fullscreen'
+import { Preloader } from '../core/preloader'
 import { Bindings } from '../core/bindings'
 
 export interface LightboxClassMap {
@@ -26,11 +27,13 @@ export interface LightboxOptions {
   deps: LightboxDependencies;
   keyboard: Bindings;
   classMap?: Partial<LightboxClassMap>;
+  preloader?: Preloader;
 }
 
 export class Lightbox {
   private readonly deps: LightboxDependencies
   private readonly keyboard: Bindings
+  private readonly preloader: Preloader | null
 
   private list: string[] = []
   private currentIndex: number = 0
@@ -47,9 +50,10 @@ export class Lightbox {
 
   public onViewChange: () => void = () => {}
 
-  constructor({ deps, keyboard, classMap }: LightboxOptions) {
+  constructor({ deps, keyboard, classMap, preloader }: LightboxOptions) {
     this.deps = deps
     this.keyboard = keyboard
+    this.preloader = preloader ?? null
 
     this.applyClassMap(classMap)
     this.bindEvents()
@@ -151,6 +155,8 @@ export class Lightbox {
     this.deps.prevBtn.classList.toggle('hide', this.currentIndex === 0)
     this.deps.currentCounter.textContent = `${this.currentIndex + 1}`
     this.deps.image.src = this.list[this.currentIndex]
+
+    this.preloader?.preloadAround(this.list, this.currentIndex)
   }
 
   public destroy() {

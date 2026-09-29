@@ -5,6 +5,7 @@ import { Lightbox, LightboxDependencies } from './components/lightbox'
 import { Bindings } from './core/bindings'
 import { Renderer } from './core/renderer'
 import { Fullscreen } from './core/fullscreen'
+import { Preloader } from './core/preloader'
 import { emitter } from './core/emitter'
 
 export interface LightboxOptions {
@@ -57,7 +58,8 @@ export function create(options: LightboxOptions): LightboxApp {
 
   const bindings = new Bindings()
   const renderer = new Renderer({ element: deps.image, minScale, maxScale, scaleSensitivity })
-  const lightbox = new Lightbox({ deps, keyboard: bindings })
+  const preloader = new Preloader({ radius: 2 })
+  const lightbox = new Lightbox({ deps, keyboard: bindings, preloader })
 
   const container = document.querySelector(gallerySelector) as HTMLElement
   const gallery = new Gallery({
@@ -86,9 +88,11 @@ export function create(options: LightboxOptions): LightboxApp {
     const galleryEl = gallery.galleryElement.querySelector('.gallery')
     if (!galleryEl) return
 
+    // Full URLs keyed by index from the original array. Needed for both click and hover events
+    const fullAt = (sourceIndex: number): string => source[sourceIndex]?.src ?? ''
+
     galleryEl.addEventListener('click', (e) => {
       const target = e.target as HTMLElement
-
       if (target.tagName !== 'IMG') return
 
       const imgs = Array.from(galleryEl.querySelectorAll<HTMLImageElement>('img'))
@@ -96,9 +100,26 @@ export function create(options: LightboxOptions): LightboxApp {
       if (clickedIndex === -1) return
 
       const order = gallery.renderedOrderIndices
-      const list = order.map(i => source[i]?.src ?? '')
+      const list = order.map(i => fullAt(i))
 
       lightbox.open(clickedIndex, list)
+    })
+
+    // Hover over the thumbnail → pre-fetch the full version so that the click
+    // and lightbox opening happen instantly
+    galleryEl.addEventListener('mouseover', (e) => {
+      const target = e.target as HTMLElement
+
+      if (target.tagName !== 'IMG') return
+
+      const imgs = Array.from(galleryEl.querySelectorAll<HTMLImageElement>('img'))
+      const domIndex = imgs.indexOf(target as HTMLImageElement)
+      if (domIndex === -1) return
+
+      const sourceIndex = gallery.renderedOrderIndices[domIndex]
+      if (sourceIndex === undefined) return
+
+      preloader.preload(fullAt(sourceIndex))
     })
   })
 
@@ -162,6 +183,7 @@ export function create(options: LightboxOptions): LightboxApp {
     Fullscreen.destroy()
     unsubscribeList()
     overlayCleanup?.()
+    preloader.clear()
 
     activePlugins.forEach(plugin => {
       plugin.destroy?.()

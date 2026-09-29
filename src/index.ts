@@ -1,5 +1,7 @@
 export type { ImageSource, GalleryOptions } from './components/gallery'
 export type { LightboxDependencies, LightboxClassMap } from './components/lightbox'
+export type { ParallaxColumnsOptions } from './plugins/parallax-columns'
+export type { PreloaderOptions } from './core/preloader'
 export type { LightboxOptions } from './factory'
 
 export {
@@ -13,12 +15,12 @@ export { Gallery } from './components/gallery'
 export { Lightbox } from './components/lightbox'
 export { Renderer } from './core/renderer'
 export { Bindings } from './core/bindings'
+export { Preloader } from './core/preloader'
 export { emitter } from './core/emitter'
 
 export { create, ready } from './factory'
 
 export { DirectionalHoverPlugin } from './plugins/directional-hover'
 export { ParallaxColumnsPlugin } from './plugins/parallax-columns'
-export type { ParallaxColumnsOptions } from './plugins/parallax-columns'
 
 import './styles/library.scss'

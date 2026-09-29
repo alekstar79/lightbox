@@ -281,8 +281,7 @@ export class Fullscreen {
     document.addEventListener(this.supportedAPI.error, onError, { once: true })
   }
 
-  private static offNativeEvents(): void {
-  }
+  private static offNativeEvents(): void {}
 
   private static readonly handleChange: NativeEventHandler = (_e: Event): void => {
     const info = this.info()
