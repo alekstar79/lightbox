@@ -21,6 +21,9 @@ body {
   align-items: center;
   justify-content: center;
   flex-direction: column;
+
+  background: var(--lb-color-bg);
+  color: var(--lb-color-text);
 }
 
 img {
@@ -35,7 +38,9 @@ img {
   height: 100%;
   width: 100%;
   display: none;
-  background: rgba(0,0,0,.7);
+  background: var(--lb-color-overlay);
+  backdrop-filter: var(--lb-overlay-backdrop);
+  -webkit-backdrop-filter: var(--lb-overlay-backdrop);
 }
 
 .header__container {
@@ -44,5 +49,5 @@ img {
   max-width: 50%;
 
   text-align: center;
-  color: #666;
+  color: var(--lb-color-text-muted);
 }

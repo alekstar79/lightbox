@@ -1,10 +1,10 @@
 .wrapper {
   max-width: 100vw;
-  padding: 20px;
+  padding: var(--lb-wrapper-padding);
 }
 
 .grid {
-  --gap: 1em;
+  --gap: var(--lb-gallery-gap);
   --columns: 4;
   max-width: 80rem;
   margin: 0 auto;
@@ -17,7 +17,6 @@
   margin-bottom: var(--gap);
 }
 
-/* noinspection CssInvalidPropertyValue */
 @supports (grid-template-rows: masonry) {
   .grid {
     display: grid;
@@ -45,7 +44,7 @@
   inset: 0;
   opacity: 0;
   animation: pulse 2.5s infinite;
-  background-color: white;
+  background-color: var(--lb-color-shimmer);
 }
 
 .flow.loaded {
@@ -65,7 +64,6 @@
 
 .flow img {
   opacity: 0;
-  transition: opacity .3s ease-in-out;
 }
 
 @keyframes pulse {
@@ -85,47 +83,54 @@
 }
 
 .content {
-  padding: .7em;
-  box-shadow: 0 0 3em rgba(0,0,0,.15);
-  background-color: white;
+  padding: var(--lb-card-padding);
+  border-radius: var(--lb-radius-card);
+  box-shadow: var(--lb-shadow-card);
+  background-color: var(--lb-color-surface);
+  backdrop-filter: var(--lb-card-backdrop);
+  -webkit-backdrop-filter: var(--lb-card-backdrop);
   overflow: hidden;
 }
 
 .gallery .image img {
-  vertical-align: middle;
-  transition: transform .3s ease;
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--lb-image-radius);
+  transition:
+    opacity var(--lb-transition-base),
+    transform var(--lb-transition-base),
+    filter var(--lb-transition-base);
 }
 
 .gallery .image:hover img {
-  transform: scale(1.12);
+  transform: var(--lb-image-hover-transform);
+  filter: var(--lb-image-hover-filter);
 }
 
 @media(max-width: 600px) {
   .grid {
-    --gap: .7em;
-    gap: var(--gap);
+    --gap: calc(var(--lb-gallery-gap) * .7);
   }
   .image.content {
-    padding: .5em;
+    padding: calc(var(--lb-card-padding) * .7);
   }
 }
 
 @media(max-width: 500px) {
   .grid {
-    --gap: .5em;
-    gap: var(--gap);
+    --gap: calc(var(--lb-gallery-gap) * .5);
   }
   .image.content {
-    padding: .4em;
+    padding: calc(var(--lb-card-padding) * .55);
   }
 }
 
 @media(max-width: 400px) {
   .grid {
-    --gap: .3em;
-    gap: var(--gap);
+    --gap: calc(var(--lb-gallery-gap) * .3);
   }
   .image.content {
-    padding: .3em;
+    padding: calc(var(--lb-card-padding) * .45);
   }
 }

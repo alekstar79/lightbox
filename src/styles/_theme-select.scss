@@ -1,0 +1,30 @@
+/**
+ * Demo-only: theme switcher control.
+ * Not part of the library bundle.
+ */
+
+.theme-select {
+  margin: 0 0 0 30px;
+  padding: 8px 12px;
+  font: inherit;
+  font-size: 14px;
+
+  color: #31b3ff;
+  background: rgb(71, 71, 71);
+  border: 1px solid rgb(60, 60, 60);
+  border-radius: 8px;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 1px 3px rgba(100, 100, 100, .2),
+    inset 0 0 0 1px rgb(60, 60, 60);
+
+  transition: border-color .2s ease;
+}
+
+.theme-select:hover,
+.theme-select:focus-visible {
+  border-color: #31b3ff;
+  outline: none;
+}

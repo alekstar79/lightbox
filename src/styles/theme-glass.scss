@@ -1,0 +1,76 @@
+/**
+ * Theme: Glass — светлая, gradient-mesh + frosted panels.
+ */
+
+:root[data-theme="glass"] {
+  --lb-color-bg: #f1f5f9;
+  --lb-color-surface: rgba(255, 255, 255, .55);       /* gallery cards */
+  --lb-color-preview-bg: rgba(255, 255, 255, .55);    /* lightbox panel */
+  --lb-color-overlay: rgba(30, 41, 59, .35);
+
+  --lb-color-text: #0f172a;
+  --lb-color-text-muted: #475569;
+  --lb-color-accent: #0284c7;
+
+  --lb-color-shimmer: rgba(255, 255, 255, .35);
+
+  --lb-color-slide-bg: rgba(255, 255, 255, .72);
+  --lb-color-slide-fg: #0f172a;
+
+  --lb-shadow-card:
+    inset 0 1px 0 rgba(255, 255, 255, .9),
+    0 8px 24px rgba(15, 23, 42, .08);
+
+  --lb-shadow-lightbox:
+    inset 0 1px 0 rgba(255, 255, 255, .95),
+    0 30px 80px rgba(15, 23, 42, .18);
+
+  --lb-radius-sm: 20px;
+  --lb-radius-card: 16px;
+  --lb-radius-slide: 50%;
+  --lb-image-radius: 10px;
+
+  --lb-wrapper-padding: 28px;
+  --lb-card-padding: 6px;
+  --lb-gallery-gap: 1.25em;
+
+  --lb-card-backdrop: blur(20px) saturate(180%);
+  --lb-preview-backdrop: blur(30px) saturate(180%);
+  --lb-overlay-backdrop: blur(10px);
+
+  --lb-image-hover-transform: scale(1.15);
+  --lb-image-hover-filter: none;
+
+  --lb-preview-padding: 8px;
+  --lb-details-padding: 14px 18px;
+  --lb-details-border-bottom: 1px solid rgba(15, 23, 42, .06);
+
+  --lb-title-size: 15px;
+  --lb-title-weight: 500;
+
+  --lb-slide-size: 52px;
+  --lb-slide-margin: 14px;
+  --lb-slide-shadow: 0 4px 16px rgba(15, 23, 42, .18);
+}
+
+/* Gradient mesh background — светлая, многоцветная подложка. */
+:root[data-theme="glass"] body {
+  background:
+    radial-gradient(circle at 15% 10%, #ffd7ba 0%, transparent 45%),
+    radial-gradient(circle at 85% 5%, #bae6fd 0%, transparent 45%),
+    radial-gradient(circle at 80% 95%, #ddd6fe 0%, transparent 45%),
+    radial-gradient(circle at 20% 90%, #bbf7d0 0%, transparent 45%),
+    #f1f5f9 fixed;
+
+  min-height: 100vh;
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root[data-theme="glass"] {
+    --lb-color-surface: rgba(255, 255, 255, .95);
+    --lb-color-preview-bg: rgba(255, 255, 255, .95);
+    --lb-card-backdrop: none;
+    --lb-preview-backdrop: none;
+    --lb-overlay-backdrop: none;
+  }
+}

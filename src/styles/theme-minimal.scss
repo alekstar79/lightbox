@@ -1,0 +1,47 @@
+/**
+ * Theme: Minimal - editorial grid.
+ */
+
+:root[data-theme="minimal"] {
+  --lb-color-bg: #fafaf9;
+  --lb-color-surface: transparent;         /* gallery cards */
+  --lb-color-preview-bg: #ffffff;          /* lightbox panel — solid */
+  --lb-color-overlay: rgba(28, 25, 23, .78);
+
+  --lb-color-text: #1c1917;
+  --lb-color-text-muted: #78716c;
+  --lb-color-accent: #1c1917;
+
+  --lb-color-shimmer: #ececec;
+
+  --lb-color-slide-bg: rgba(28, 25, 23, .72);
+  --lb-color-slide-fg: #ffffff;
+
+  --lb-shadow-card: none;
+  --lb-shadow-lightbox: 0 0 0 1px rgba(28, 25, 23, .12);
+
+  --lb-radius-sm: 0px;
+  --lb-radius-card: 0px;
+  --lb-radius-slide: 0px;
+  --lb-image-radius: 0px;
+
+  --lb-wrapper-padding: 8px;
+  --lb-card-padding: 0em;
+  --lb-gallery-gap: 6px;
+
+  --lb-image-hover-transform: none;
+  --lb-image-hover-filter: brightness(.85);
+
+  --lb-preview-padding: 0 0 0 0;
+  --lb-details-padding: 14px 18px;
+  --lb-details-border-bottom: 1px solid rgba(28, 25, 23, .12);
+
+  --lb-title-size: 11px;
+  --lb-title-weight: 500;
+  --lb-title-letter-spacing: .22em;
+  --lb-title-transform: uppercase;
+
+  --lb-slide-size: 40px;
+  --lb-slide-margin: 0px;
+  --lb-slide-shadow: none;
+}

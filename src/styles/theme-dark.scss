@@ -1,0 +1,50 @@
+/**
+ * Theme: Dark - night mode.
+ */
+
+:root[data-theme="dark"] {
+  --lb-color-bg: #08090c;
+  --lb-color-surface: #12141a;             /* gallery cards */
+  --lb-color-preview-bg: #1a1d24;          /* lightbox panel — lighter */
+  --lb-color-overlay: rgba(0, 0, 0, .72);  /* softer backdrop */
+
+  --lb-color-text: #e6e8eb;
+  --lb-color-text-muted: #8b92a0;
+  --lb-color-accent: #818cf8;
+
+  --lb-color-shimmer: #1c1f27;
+
+  --lb-color-slide-bg: rgba(255, 255, 255, .14);
+  --lb-color-slide-fg: #ffffff;
+
+  --lb-shadow-card:
+    inset 0 0 0 1px rgba(255, 255, 255, .06),
+    0 8px 24px rgba(0, 0, 0, .5);
+
+  --lb-shadow-lightbox:
+    inset 0 0 0 1px rgba(255, 255, 255, .1),
+    0 24px 60px rgba(0, 0, 0, .6);
+
+  --lb-radius-sm: 12px;
+  --lb-radius-card: 10px;
+  --lb-radius-slide: 50%;
+  --lb-image-radius: 10px;
+
+  --lb-wrapper-padding: 20px;
+  --lb-card-padding: 0em;
+  --lb-gallery-gap: 1em;
+
+  --lb-image-hover-transform: scale(1.06);
+  --lb-image-hover-filter: brightness(1.08);
+
+  --lb-preview-padding: 0 6px 6px 6px;
+  --lb-details-padding: 14px 16px;
+  --lb-details-border-bottom: 1px solid rgba(255, 255, 255, .06);
+
+  --lb-title-size: 14px;
+  --lb-title-weight: 500;
+
+  --lb-slide-size: 56px;
+  --lb-slide-margin: 12px;
+  --lb-slide-shadow: 0 4px 16px rgba(0, 0, 0, .5);
+}

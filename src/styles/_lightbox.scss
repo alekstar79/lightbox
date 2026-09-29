@@ -6,11 +6,13 @@
   min-height: fit-content;
   min-width: fit-content;
   opacity: 0;
-  background: #fff;
+  background: var(--lb-color-preview-bg);
   pointer-events: none;
-  border-radius: 3px;
-  padding: 0 5px 5px 5px;
-  box-shadow: 0 0 15px rgba(0,0,0,.2);
+  border-radius: var(--lb-radius-sm);
+  padding: var(--lb-preview-padding);
+  box-shadow: var(--lb-shadow-lightbox);
+  backdrop-filter: var(--lb-preview-backdrop);
+  -webkit-backdrop-filter: var(--lb-preview-backdrop);
   user-select: none;
 }
 
@@ -30,21 +32,24 @@
 
 .preview-box.show {
   pointer-events: auto;
-  transition: opacity .3s ease;
+  transition: opacity var(--lb-transition-base);
   opacity: 1;
 }
 
 .preview-box .details {
   display: flex;
   align-items: center;
-  padding: 12px 15px 12px 10px;
+  padding: var(--lb-details-padding);
   justify-content: space-between;
+  border-bottom: var(--lb-details-border-bottom);
 }
 
 .preview-box .details .title {
   display: flex;
-  font-size: 18px;
-  font-weight: 400;
+  font-size: var(--lb-title-size);
+  font-weight: var(--lb-title-weight);
+  letter-spacing: var(--lb-title-letter-spacing);
+  text-transform: var(--lb-title-transform);
 }
 
 .details .title p {
@@ -57,10 +62,10 @@
 
 .details .icon {
   padding: 3px 10px;
-  color: #007bff;
+  color: var(--lb-color-accent);
   font-size: 20px;
   cursor: pointer;
-  transition: transform .3s ease;
+  transition: transform var(--lb-transition-base);
 }
 
 .details .icon:hover {
@@ -96,15 +101,16 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  margin: 10px;
-  height: 60px;
-  width: 60px;
-  border-radius: 50%;
-  background-color: rgba(0,0,0,.5);
-  transition: all .3s ease;
+  margin: var(--lb-slide-margin);
+  height: var(--lb-slide-size);
+  width: var(--lb-slide-size);
+  border-radius: var(--lb-radius-slide);
+  background-color: var(--lb-color-slide-bg);
+  box-shadow: var(--lb-slide-shadow);
+  transition: all var(--lb-transition-base);
   font-size: 30px;
   cursor: pointer;
-  color: #fff;
+  color: var(--lb-color-slide-fg);
   opacity: 0;
 }
 

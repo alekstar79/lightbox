@@ -1,3 +1,9 @@
 @use 'base';
 @use 'toggler';
 @use 'library';
+@use 'theme-select';
+
+/* Demo: bundle all library themes so the switcher can flip data-theme. */
+@use 'theme-dark';
+@use 'theme-minimal';
+@use 'theme-glass';

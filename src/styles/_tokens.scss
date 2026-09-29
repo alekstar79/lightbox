@@ -1,0 +1,67 @@
+/**
+ * Design tokens
+ *
+ * Default values = the built-in "base" theme.
+ * Alternative themes are provided as separate CSS files
+ * (theme-dark.css / theme-minimal.css / theme-glass.css)
+ * and override these tokens under `:root[data-theme="…"]`.
+ */
+
+:root {
+  /* Colors */
+  --lb-color-bg: #fff;
+  --lb-color-surface: #fff;            /* gallery card background */
+  --lb-color-preview-bg: #fff;         /* lightbox panel background */
+  --lb-color-overlay: rgba(0, 0, 0, .7);
+
+  --lb-color-text: #000;
+  --lb-color-text-muted: #666;
+  --lb-color-accent: #007bff;
+  --lb-color-shimmer: #fff;
+  --lb-color-border: transparent;
+
+  --lb-color-slide-bg: rgba(0, 0, 0, .5);
+  --lb-color-slide-fg: #fff;
+
+  /* Shadows */
+  --lb-shadow-card: 0 0 3em rgba(0, 0, 0, .15);
+  --lb-shadow-lightbox: 0 0 15px rgba(0, 0, 0, .2);
+  --lb-slide-shadow: none;
+
+  /* Radii */
+  --lb-radius-sm: 3px;
+  --lb-radius-card: 0px;
+  --lb-radius-slide: 50%;
+  --lb-image-radius: 0px;
+
+  /* Layout metrics */
+  --lb-wrapper-padding: 20px;
+  --lb-card-padding: .7em;
+  --lb-gallery-gap: 1em;
+
+  /* Frosted panels - value is a backdrop-filter parameter list. `none` disables the effect. */
+  --lb-card-backdrop: none;
+
+  /* Image hover behavior */
+  --lb-image-hover-transform: scale(1.12);
+  --lb-image-hover-filter: none;
+
+  /* Lightbox chrome */
+  --lb-preview-padding: 0 5px 5px 5px;
+  --lb-preview-backdrop: none;
+  --lb-overlay-backdrop: none;
+
+  --lb-details-padding: 12px 15px 12px 10px;
+  --lb-details-border-bottom: none;
+  --lb-title-size: 18px;
+  --lb-title-weight: 400;
+  --lb-title-letter-spacing: 0em;
+  --lb-title-transform: none;
+
+  --lb-slide-size: 60px;
+  --lb-slide-margin: 10px;
+
+  /* Motion */
+  --lb-transition-fast: .2s ease;
+  --lb-transition-base: .3s ease;
+}
